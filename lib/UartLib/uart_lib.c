@@ -1,15 +1,15 @@
 /**
- *  \file 		Uart_Lib.c
+ *  \file 		uart_lib.c
  *  \brief		UART protocol file
  *  \details	It contain all UART protocol function
  *  \author		Maciej Kurcius
  *  \version	1.0
- *  \date		24.11.2021
+ *  \date		23.07.2024
  */
 
 /* INCLUDES */
 
-#include <Uart_Lib.h>
+#include <uart_lib.h>
 #include <logic.h>
 
 /* DEFINES */
@@ -21,27 +21,6 @@
 /* FUNCTION */
 
 /**
- * \brief 	UARTProtocol - init all data structures
- * \param 	void
- * \see 	UsartRxIT
- * \note 	Function init all data structures in uart protocol. Call this function only once
- * 			when your system is start up.
- * \return 	void
- */
-void UartLibInit(void){
-	Uart.RxFifo.length = 0;
-	Uart.RxFifo.counter = 0;
-	Uart.TxFifo.length	= 0;
-	Uart.TxFifo.counter = 0;
-	Uart.Parser.AccDataSize = 0;
-	Uart.RxFifo.buf = (uint8_t*) UartRxBuffer;
-	Uart.TxFifo.buf = (uint8_t*) UartTxBuffer;
-	Uart.RxFifo.bufsize = UART_RXBUF_SIZE;
-	Uart.TxFifo.bufsize = UART_TXBUF_SIZE;
-	Uart.ModeOfTransmission = UART_MODE;
-}
-
-/**
  * \brief 	UARTProtocol - handling of receiving data buffer
  * \param 	size - size of data to read
  * \param 	buffer - pointer for buffer to write received data
@@ -49,11 +28,11 @@ void UartLibInit(void){
  * \note 	Function copy data from UART port to buffer.
  * \return 	copied - return size of copied data
  */
-uint16_t UartReceiveBuffer(uint16_t size, uint8_t* buffer){
+uint16_t UartReceiveBuffer(UartTypeDef UartHandle, uint16_t size, uint8_t* buffer){
 	uint16_t copied = 0;
-	while((size>0) && (Uart.RxFifo.length - Uart.RxFifo.counter != 0))
+	while((size>0) && (UartHandle.RxFifo.length - UartHandle.RxFifo.counter != 0))
 	{
-		*buffer++ = Uart.RxFifo.buf[Uart.RxFifo.counter++];
+		*buffer++ = UartHandle.RxFifo.buf[UartHandle.RxFifo.counter++];
 		copied++;
 		size--;
 	}
@@ -69,16 +48,20 @@ uint16_t UartReceiveBuffer(uint16_t size, uint8_t* buffer){
  * 			When data is wrote to TX FIFO, function enable UART TX interrupts.
  * \return 	void
  */
-void UartSendBuffer(uint16_t size, uint8_t* buffer){
-	LL_USART_DisableIT_TXE(UART);
-	LL_USART_DisableIT_TC(UART);
+void UartSendBuffer(UartTypeDef UartHandle, uint16_t size, uint8_t* buffer){
+	UartDisableItTxe(UartHandle);
+	
+	// LL_USART_DisableIT_TXE(UART);
+	// LL_USART_DisableIT_TC(UART);
+
 	for(uint16_t i=0; i<size; i++)
 	{
-		Uart.TxFifo.buf[Uart.TxFifo.length]=buffer[i];
-		if(Uart.TxFifo.length < Uart.TxFifo.bufsize-1)
-			Uart.TxFifo.length++;
+		UartHandle.TxFifo.buf[UartHandle.TxFifo.length]=buffer[i];
+		if(UartHandle.TxFifo.length < UartHandle.TxFifo.bufsize-1)
+			UartHandle.TxFifo.length++;
 	}
-	LL_USART_EnableIT_TXE(UART);
+	UartEnableItTxe(UartHandle);
+	// LL_USART_EnableIT_TXE(UART);
 }
 
 /**
@@ -91,17 +74,18 @@ void UartSendBuffer(uint16_t size, uint8_t* buffer){
  * 			- overwrite laty byte. Function is call by UART interrupt.
  * \return 	void
  */
-void UsartRxIT(void){
-	uint8_t byte = LL_USART_ReceiveData8(UART);
-	if(Uart.RxFifo.counter >= Uart.RxFifo.length)		//if RX buffer is empty -> return to begin
+void UsartRxIT(UartTypeDef UartHandle){
+	// uint8_t byte = LL_USART_ReceiveData8(UART);
+	uint8_t byte = UartReceiveData8(UartHandle);
+	if(UartHandle.RxFifo.counter >= UartHandle.RxFifo.length)		//if RX buffer is empty -> return to begin
 	{
-		Uart.RxFifo.length = 0;
-		Uart.RxFifo.counter = 0;
+		UartHandle.RxFifo.length = 0;
+		UartHandle.RxFifo.counter = 0;
 	}
-	Uart.RxFifo.buf[Uart.RxFifo.length] = byte;
-	if(Uart.RxFifo.length < Uart.RxFifo.bufsize-1)	//if buffer is full -> overwrite last byte
+	UartHandle.RxFifo.buf[UartHandle.RxFifo.length] = byte;
+	if(UartHandle.RxFifo.length < UartHandle.RxFifo.bufsize-1)	//if buffer is full -> overwrite last byte
 	{
-		Uart.RxFifo.length++;
+		UartHandle.RxFifo.length++;
 	}
 }
 
@@ -114,23 +98,16 @@ void UsartRxIT(void){
  * 			When all data are sent, interrupts from UART TX are disabling.
  * \return 	void
  */
-void UsartTxIT(void){
-	if(Uart.TxFifo.counter < Uart.TxFifo.length){		//check if TX buffer contain any data
-		LL_USART_TransmitData8(UART, Uart.TxFifo.buf[Uart.TxFifo.counter++]);
+void UsartTxIT(UartTypeDef UartHandle){
+	if(UartHandle.TxFifo.counter < UartHandle.TxFifo.length){		//check if TX buffer contain any data
+		// LL_USART_TransmitData8(UART, Uart.TxFifo.buf[Uart.TxFifo.counter++]);
+		UartTransmitData8(UartHandle, UartHandle.TxFifo.buf[UartHandle.TxFifo.counter++]);
 	}
 	else{
-		Uart.TxFifo.length = 0;
-		Uart.TxFifo.counter = 0;
-		LL_USART_DisableIT_TXE(UART);					//disable it from TXE
-		LL_USART_ClearFlag_PE(UART);
-		LL_USART_ClearFlag_FE(UART);
-		LL_USART_ClearFlag_IDLE(UART);
-		LL_USART_ClearFlag_TC(UART);
-		LL_USART_ClearFlag_EOB(UART);
-		LL_USART_ClearFlag_CM(UART);
-		LL_USART_ClearFlag_ORE(UART);
-		LL_USART_ClearFlag_NE(UART);
-//		USART1->ISR &= 0b0011101111111100101101;
+		UartHandle.TxFifo.length = 0;
+		UartHandle.TxFifo.counter = 0;
+		UartDisableItTxe(UartHandle);
+		UartClearFlags(UartHandle);
 	}
 }
 
@@ -141,8 +118,8 @@ void UsartTxIT(void){
  * \note 	Function send all UART protocol frame via UART port.
  * \return 	void
  */
-void UartSendFrame(UartFrameTypeDef* frame){
-	static uint8_t buf[UART_FRAME_LENGTH(UART_MAX_FRAME_ARGS_SIZE)];
+void UartSendFrame(UartTypeDef UartHandle, UartFrameTypeDef* frame){
+	static uint8_t buf[UART_FRAME_LENGTH(MAX_FRAME_ARGS_SIZE)];
 	uint8_t* buffer = buf;
 	uint8_t ExorCrc = frame->command ^ (frame->size);			//EXOR frame command and frame size
 	*buffer++ = UART_FRAME_STARTBYTE;
@@ -154,7 +131,7 @@ void UartSendFrame(UartFrameTypeDef* frame){
 	}
 	buffer = ByteToHex(ExorCrc, buffer);
 	*buffer++ = UART_FRAME_STOPBYTE;
-	UartSendBuffer(UART_FRAME_LENGTH(frame->size), buf);
+	UartSendBuffer(UartHandle, UART_FRAME_LENGTH(frame->size), buf);
 }
 
 /**
@@ -166,10 +143,10 @@ void UartSendFrame(UartFrameTypeDef* frame){
  * 			Function is call by main loop of program.
  * \return 	void
  */
-void UartReceivedFrameHandler(void){
+void UartReceivedFrameHandler(UartTypeDef UartHandle){
 	uint8_t TempData;
 	UartParserTypeDef Parser;
-	while(UartReceiveBuffer(1,&TempData)){
+	while(UartReceiveBuffer(UartHandle, 1,&TempData)){
 		if(TempData==UART_FRAME_STARTBYTE){
 			Parser.AccDataSize = 0;
 		}
@@ -179,7 +156,7 @@ void UartReceivedFrameHandler(void){
 					Parser.RawData[Parser.AccDataSize++] = TempData;
 			}
 			else{
-				UartParseFrame(Parser.AccDataSize, Parser.RawData);
+				UartParseFrame(UartHandle, Parser.AccDataSize, Parser.RawData);
 				return;
 			}
 		}
@@ -197,7 +174,7 @@ void UartReceivedFrameHandler(void){
  * 			CRC is equal received CRC, calls function which execute this frame.
  * \return 	void
  */
-void UartParseFrame(uint8_t size, uint8_t* buf){
+void UartParseFrame(UartTypeDef UartHandle, uint8_t size, uint8_t* buf){
 	uint8_t TempData = 0;
 	uint8_t ExorCrc = 0;
 	uint8_t* Buffer = buf;
@@ -233,7 +210,7 @@ void UartParseFrame(uint8_t size, uint8_t* buf){
 		if(ExorCrc == (uint8_t)TempData){
 			Frame.data = FrameDataTemp;
 			if(((Frame.command >> 7) & 0xF) == 1)		//if MSB of command in frame == 1 -> resend empty frame to confirm received frame
-				UartSendFrameD(0, 0, 0);
+				UartSendFrameD(UartHandle, 0, 0, 0);
 			UartFrameExecute(&Frame);
 		}
 		else
@@ -252,12 +229,12 @@ void UartParseFrame(uint8_t size, uint8_t* buf){
  * \note 	Function packing data into a frame and send them via UART port.
  * \return 	void
  */
-void UartSendFrameD(uint8_t command, uint8_t arg_size, uint8_t* arg){
+void UartSendFrameD(UartTypeDef UartHandle, uint8_t command, uint8_t arg_size, uint8_t* arg){
 	UartFrameTypeDef frame;
 	frame.command = command;
 	frame.size = arg_size;
 	frame.data = arg;
-	UartSendFrame(&frame);
+	UartSendFrame(UartHandle, &frame);
 }
 
 /**

@@ -57,26 +57,11 @@ void SystemClockConfig(void){
   LL_RCC_SetUSARTClockSource(LL_RCC_USART1_CLKSOURCE_PCLK2);
 }
 
-/**
- * \brief 	Function for prepare board hardware to work
- * \param 	void
- * \see 	MainLogicInit()
- * \see 	SysTickInit()
- * \see 	SystemClockConfig()
- * \see 	GpioInit()
- * \see 	AdcInit()
- * \see 	I2cInit()
- * \see 	UartInit()
- * \note 	Function contain all action execute only one, after power is on.
- * \return 	void
- */
 void BoardInit(void){
 	SysTickInit();
 	SystemClockConfig();
 	GpioInit();
-	AdcInit();
-	I2cInit();
-	UartInit();
+	UartHardwareInit();
 }
 
 /****END OF FILE****/

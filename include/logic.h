@@ -13,13 +13,10 @@
 /* INCLUDES */
 
 #include <main.h>
-#include <system_param.h>
 #include <string.h>
 
 /* DEFINES */
 
-#define BATTERY_TYPE 		LION
-#define BATTERY_CAPACITY	7800
 #define ARRAY_LENGTH(arg)	(sizeof(arg) / sizeof(arg[0]))
 
 /* TYPE DEF ENUM */
@@ -104,36 +101,11 @@ typedef struct{
 /* FUNCTION PROTOTYPES */
 
 void HardFaultInfLoop(void);
-void RobotOffActions(void);
-void RobotOnActions(void);
 void MainLogicInit(void);
 void MainLogicLoop(void);
-void BatteryChargingLoopHandler(void);
 void PowerOnInitProcedure(void);
 void PowerOnPushButtonItProcedure(void);
-void DigitalBoardLoopHandler(void);
-void SetLowbatLed(OutputModeTypeDef Mode);
-void SetChargeLed(OutputModeTypeDef Mode);
 void SetPowerPushButtonLed(OutputModeTypeDef Mode);
-void SwitchOnOffVsSwCh1(OutputModeTypeDef Mode);
-void SwitchOnOffVsSwCh2(OutputModeTypeDef Mode);
-void SwitchOnOffPowerLock(OutputModeTypeDef Mode);
-void SwitchOnOffPowerLock(OutputModeTypeDef Mode);
-void SwitchOnOffRoboticArmInverter(OutputModeTypeDef Mode);
-void SwitchOnOffMCU(OutputModeTypeDef Mode);
-void BatteryLoopHandler(void);
-uint16_t GetBatteryTemperature(void);
-void RoboticArmLoopHandler(void);
-void RoboticArmInverterReset(void);
-uint8_t DC12V_IsActiveFlag_Pg(void);
-uint8_t DC5V_IsActiveFlag_Pg(void);
-uint8_t VsSwCh1_IsActiveFlag_Pg(void);
-uint8_t VsSwCh2_IsActiveFlag_Pg(void);
-uint8_t IndAdpt_IsActiveFlag_Attach(void);
-uint8_t UsbcAdpt_IsActiveFlag_Attach(void);
-uint8_t Battery_IsActiveFlag_Attach(void);
-uint8_t SwitchOnOffDCInverters(OutputModeTypeDef Mode);
-
 
 #endif
 /****END OF FILE****/

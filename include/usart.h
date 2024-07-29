@@ -18,17 +18,8 @@ extern "C" {
 
 #include <main.h>
 
-/* DEFINES */
 
-/* TYPE DEF ENUM */
-
-/* STRUCTURES  */
-
-/* VARIABLES */
-
-/* FUNCTION PROTOTYPES */
-
-void UartInit(void);
+void UartHardwareInit(void);
 
 #ifdef __cplusplus
 }

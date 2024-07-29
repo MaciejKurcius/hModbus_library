@@ -19,47 +19,11 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+// #include "main.h"
+#include "uart_lib_conf.h"
 #include "stm32l0xx_it.h"
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN TD */
-
-/* USER CODE END TD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/* External variables --------------------------------------------------------*/
-
-/* USER CODE BEGIN EV */
-
-/* USER CODE END EV */
+extern UartTypeDef UartId_1;
 
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
@@ -145,65 +109,13 @@ void SysTick_Handler(void)
   * @brief This function handles EXTI line 4 to 15 interrupts.
   */
 void EXTI4_15_IRQHandler(void){
-
-	if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_6) != RESET){
-		//start battery independent adapter charge procedure
-		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_6);
-	}
-	if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_7) != RESET){
-		//start battery usbc adapter charge procedure
-		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_7);
-	}
-	if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_8) != RESET){
-		//battery attach/remove procedure
-		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_8);
-	}
 	if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_12) != RESET){
 		PowerOnPushButtonItProcedure();
 		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_12);
 	}
 }
 
-/**
-  * @brief This function handles DMA1 channel 1 interrupt.
-  */
-void DMA1_Channel1_IRQHandler(void){
-	if(LL_DMA_IsActiveFlag_TC1(DMA1) == 1){
-		LL_DMA_ClearFlag_TC1(DMA1);
-		AdcDmaTransferCompleteCallback();
-	}
-	if(LL_DMA_IsActiveFlag_TE1(DMA1) == 1){
-		LL_DMA_ClearFlag_TE1(DMA1);
-		AdcDmaTransferErrorCallback();
-	}
-}
 
-/**
-  * @brief This function handles ADC, COMP1 and COMP2 interrupts (COMP interrupts through EXTI lines 21 and 22).
-  */
-void ADC1_COMP_IRQHandler(void){
-	if(LL_ADC_IsActiveFlag_EOS(ADC1) != 0){
-		LL_ADC_ClearFlag_EOS(ADC1);
-		AdcGroupConversionCompleteCallback();
-	}
-	if(LL_ADC_IsActiveFlag_OVR(ADC1) != 0){
-		LL_ADC_ClearFlag_OVR(ADC1);
-		AdcGroupConversionErrorCallback();
-	}
-}
-
-/**
-  * @brief This function handles TIM6 global interrupt.
-  */
-void TIM6_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM6_IRQn 0 */
-
-  /* USER CODE END TIM6_IRQn 0 */
-  /* USER CODE BEGIN TIM6_IRQn 1 */
-
-  /* USER CODE END TIM6_IRQn 1 */
-}
 
 /**
  * \brief This function handles USART1 global interrupt.
@@ -215,10 +127,10 @@ void TIM6_IRQHandler(void)
  */
 void USART1_IRQHandler(void){
 	if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
-		UsartRxIT();
+		UsartRxIT(UartId_1);
 	}
 	if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
-		UsartTxIT();
+		UsartTxIT(UartId_1);
 	}
 }
 

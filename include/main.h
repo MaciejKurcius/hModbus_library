@@ -18,7 +18,6 @@
 #include <stm32l0xx_ll_tim.h>
 #include <stm32l0xx_ll_usart.h>
 #include <stm32l0xx_ll_gpio.h>
-#include <eeprom.h>
 
 #if defined(USE_FULL_ASSERT)
     #include "stm32_assert.h"
@@ -28,9 +27,8 @@
 #include <bsp.h>
 #include <logic.h>
 #include <config.h>
-#include <bq25713.h>
-#include <Uart_Lib.h>
-#include <adc.h>
+// #include <Uart_Lib.h>
+#include <uart_lib_conf.h>
 
 /* FUNCTION PROTOTYPES */
 

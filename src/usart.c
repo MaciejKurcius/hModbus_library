@@ -13,6 +13,8 @@
 
 /* VARIABLES */
 
+extern UartTypeDef UartId_1;
+
 /* FUNCTION */
 
 /**
@@ -23,7 +25,7 @@
  *			should contain all action, which must be execute before using UART transmission.
  * \return 	void
  */
-void UartInit(void){
+void UartHardwareInit(void){
 	  LL_USART_InitTypeDef USART_InitStruct = {0};
 	  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -73,7 +75,7 @@ void UartInit(void){
 //	  LL_USART_DisableIT_RXNE(USART1);
 	  LL_USART_DisableIT_IDLE(USART1);
 
-	  UartLibInit();
+	  UartLibInit(UartId_1);
 }
 
 /****END OF FILE****/
