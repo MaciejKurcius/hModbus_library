@@ -41,14 +41,6 @@ extern "C" {
                                                                  0 bit  for subpriority */
 #endif
 
-/* TYPE DEF ENUM */
-
-/* STRUCTURES */
-
-/* VARIABLES */
-
-/* FUNCTION PROTOTYPES */
-
 void GpioInit(void);
 
 #ifdef __cplusplus

@@ -27,7 +27,6 @@
 #include <bsp.h>
 #include <logic.h>
 #include <config.h>
-// #include <Uart_Lib.h>
 
 /* FUNCTION PROTOTYPES */
 

@@ -27,76 +27,7 @@ typedef enum{
 	Toggle	= 2
 }OutputModeTypeDef;
 
-typedef enum{
-	ServiceMode	= 0,
-	RobotOn		= 1,
-	RobotOff	= 2
-}StateTypeDef;
-
-typedef enum{
-	unknown_status = 0,
-	charging = 1,
-	discharging = 2,
-	not_charging = 3,
-	full = 4
-}BatteryStatusTypeDef;
-
-typedef enum{
-	unknown_health = 0,
-	good = 1,
-	overhaet = 2,
-	dead = 3,
-	overvoltage = 4,
-	unspec_failure = 5,
-	cold = 6,
-	watchdog_timer_expire = 7,
-	safety_timer_expire = 8
-}BatteryHealthTypeDef;
-
-typedef enum{
-	unknown_type = 0,
-	NIMH = 1,
-	LION = 2,
-	LIPO = 3,
-	LIFE = 4,
-	NICD = 5,
-	LIMN = 6
-}BatteryTechnologyTypeDef;
-
-
-
 /* STRUCTURES */
-
-typedef struct{
-	//ROS battery msgs variables
-	uint16_t					Voltage;
-	int16_t						Temperature;
-	uint16_t					Current;
-	uint16_t					ChargeCurrent;
-	uint16_t					Capacity;
-	uint16_t					DesignCapacity;
-	uint8_t						Percentage;
-	BatteryStatusTypeDef 		Status;
-	BatteryHealthTypeDef		Health;
-	BatteryTechnologyTypeDef 	Technology;
-	uint8_t						Present;
-	uint16_t 					Cell_voltage;
-	int16_t						Cell_temperature;
-	//rest battery variables
-	uint8_t						FlagOc;
-	uint8_t 					FlagCharging;
-	uint8_t						LowVoltageFlag;
-}BatteryTypeDef;
-
-typedef struct{
-	uint8_t		ExtAdapterFlagPresent;
-	uint8_t		ExtAdapterFlagOv;
-	uint8_t		ExtAdapterFlagOc;
-	uint16_t	ExtAdapterCurrent;
-	uint16_t	ExtAdapterVoltage;
-}ExtAdapterTypeDef;
-
-
 
 /* FUNCTION PROTOTYPES */
 
