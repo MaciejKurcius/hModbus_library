@@ -70,9 +70,11 @@ void UartHardwareInit(void){
 	  LL_USART_EnableIT_ERROR(USART1);
 	  LL_USART_DisableIT_TXE(USART1);
 	  LL_USART_DisableIT_TC(USART1);
-	  //
+	  
 //	  LL_USART_DisableIT_RXNE(USART1);
 	  LL_USART_DisableIT_IDLE(USART1);
+
+	//   LL_USART_EnableIT_TXE(USART1);
 }
 
 /****END OF FILE****/

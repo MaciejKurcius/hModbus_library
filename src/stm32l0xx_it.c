@@ -22,7 +22,9 @@
 // #include "main.h"
 #include "main.h"
 #include "stm32l0xx_it.h"
+#include "mmodbus.h"
 
+extern volatile uint32_t SysTick_counter;
 
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
@@ -89,7 +91,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+  SysTick_counter++;
   /* USER CODE END SysTick_IRQn 0 */
 
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -125,12 +127,13 @@ void EXTI4_15_IRQHandler(void){
  * \return void
  */
 void USART1_IRQHandler(void){
+  mmodbus_callback();
 	// if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
   //   ;
 	// }
-	// if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
-  //   ;
-	// }
+	if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
+    ;
+	}
 }
 
 /****END OF FILE****/

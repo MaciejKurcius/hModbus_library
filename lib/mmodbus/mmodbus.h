@@ -53,7 +53,8 @@
 #include  "cmsis_os.h"
 #define   mmodbus_delay(x)  osDelay(x)
 #else
-#define   mmodbus_delay(x)  HAL_Delay(x)
+// #define   mmodbus_delay(x)  HAL_Delay(x)
+#define   mmodbus_delay(x)  LL_mDelay(x)
 #endif
 
 //##################################################################################################

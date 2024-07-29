@@ -12,7 +12,7 @@
 #include <main.h>
 
 /* VARIABLES */
-
+volatile uint32_t SysTick_counter;
 
 /* FUNCTION */
 

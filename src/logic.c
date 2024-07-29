@@ -10,7 +10,7 @@
 /* INCLUDES */
 
 #include <logic.h>
-
+#include "mmodbus.h"
 
 /* VARIABLES */
 
@@ -31,12 +31,28 @@ void HardFaultInfLoop(void){
 
 void MainLogicInit(void){
 	BoardInit();
-	LL_mDelay(250);
+	LL_mDelay(50);
 	PowerOnInitProcedure();
+	// mmodbus_init(2500);
+  
 }
 
-void MainLogicLoop(void){	
-	;
+void MainLogicLoop(void){
+	uint16_t delay = 100;
+	uint16_t TxData[10] = {0,1,1,0,0,1,1,1,0,0};
+	uint16_t RetData;
+	uint16_t RetDataTab[10];
+	mmodbus_readHoldingRegister16i(10, 0, &RetData);
+	LL_mDelay(delay);
+	mmodbus_readHoldingRegisters16i(10, 0, 10, RetDataTab);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(10, 7, 1);// working ok
+	LL_mDelay(delay);
+	mmodbus_writeHoldingRegisters16i(10,0, 10, TxData);
+	LL_mDelay(delay);
+	mmodbus_writeHoldingRegister16i(10, 0, 7); // working ok
+	LL_mDelay(delay);
+
 }
 
 
@@ -47,6 +63,8 @@ void PowerOnInitProcedure(void){
 			if(PowerOnDelay != 0)
 				PowerOnDelay--;
 		if(PowerOnDelay == 0){
+			SwitchOnOffPowerLock(On);
+			SetPowerPushButtonLed(On);
 			break;
 		}
 	}

@@ -23,6 +23,7 @@
 void SysTickInit(void){
 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+  SysTick_Config(SystemCoreClock/1000);
 }
 
 /**
@@ -58,8 +59,8 @@ void SystemClockConfig(void){
 }
 
 void BoardInit(void){
-	SysTickInit();
 	SystemClockConfig();
+	SysTickInit();
 	GpioInit();
 	UartHardwareInit();
 }

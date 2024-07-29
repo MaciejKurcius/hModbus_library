@@ -17,7 +17,7 @@
 #define SBC_POWER_OFF_DELAY 60000
 #define POWER_ON_DELAY 	1500
 #define POWER_OFF_DELAY 500
-#define MAIN_LOOP_DELAY	750
+#define MAIN_LOOP_DELAY	100
 
 /* UART */
 #define UART_BAUD_RATE			            38400
