@@ -13,7 +13,6 @@
 
 /* VARIABLES */
 
-extern UartTypeDef UartId_1;
 
 /* FUNCTION */
 
@@ -74,8 +73,6 @@ void UartHardwareInit(void){
 	  //
 //	  LL_USART_DisableIT_RXNE(USART1);
 	  LL_USART_DisableIT_IDLE(USART1);
-
-	  UartLibInit(UartId_1);
 }
 
 /****END OF FILE****/

@@ -16,21 +16,14 @@
 /* ============================================= */
 
 
-#define FIRMWARE_VERSION    "v1.0.1"
+
 #define SBC_POWER_OFF_PBLED_BLINK_DELAY 500
 #define SBC_POWER_OFF_DELAY 60000
 #define POWER_ON_DELAY 	1500
 #define POWER_OFF_DELAY 500
 #define MAIN_LOOP_DELAY	750
 
-/* INVERTERS AND POWER SWITCH DATA */
 
-#define VS_SW_CH1_SLEW_RATE		32	//ms
-#define VS_SW_CH2_SLEW_RATE		13	//ms
-#define DC12V_INV_SLEW_RATE		16	//ms
-#define DC5V_INV_SLEW_RATE		6	//ms
-#define INV_TIMEOUT_OFFSET		5	//ms
-#define VS_SW_DEFAULT_STATE     1
 
 /* UART */
 #define UART_BAUD_RATE			            38400
@@ -47,15 +40,6 @@
 #define BATTERY_MAX_TEMP                    55      //Celsius degree
 #define BATTERY_DISCONNECTED_ADC_TRESHOLD   3200    //Battery thermistor ADC voltage in mV
 
-/* ARM INVERTER */
-#define ARM_BOARD_DEFAULT_STATE 1       // 1 - 'On' or 0 - 'Off'
-
-/* BOARD VERSION */
-#define BOARD_VER_MEM_BLOCK			0x00
-#define BOARD_VER_MEM_ADDR			0x00
-#define BOARD_VER_MEM_SIZE			0x04
-#define BOARD_VER_READ_ATTEMPTS		5
-#define BOARD_VERSION               "v1.3\n"
 
 #endif
 /****END OF FILE****/

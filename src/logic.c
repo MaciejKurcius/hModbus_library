@@ -14,8 +14,6 @@
 
 /* VARIABLES */
 
-extern UartTypeDef UartId_1;
-
 /* FUNCTIONS */
 
 void HardFaultInfLoop(void){
@@ -38,7 +36,7 @@ void MainLogicInit(void){
 }
 
 void MainLogicLoop(void){	
-	UartReceivedFrameHandler(UartId_1);
+	;
 }
 
 

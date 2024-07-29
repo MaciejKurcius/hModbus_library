@@ -12,7 +12,6 @@
 #include <main.h>
 
 /* VARIABLES */
-extern UartTypeDef UartId_1;
 
 
 /* FUNCTION */

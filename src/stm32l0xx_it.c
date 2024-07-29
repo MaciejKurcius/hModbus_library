@@ -20,10 +20,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 // #include "main.h"
-#include "uart_lib_conf.h"
+#include "main.h"
 #include "stm32l0xx_it.h"
 
-extern UartTypeDef UartId_1;
 
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
@@ -126,12 +125,12 @@ void EXTI4_15_IRQHandler(void){
  * \return void
  */
 void USART1_IRQHandler(void){
-	if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
-		UsartRxIT(UartId_1);
-	}
-	if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
-		UsartTxIT(UartId_1);
-	}
+	// if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
+  //   ;
+	// }
+	// if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
+  //   ;
+	// }
 }
 
 /****END OF FILE****/

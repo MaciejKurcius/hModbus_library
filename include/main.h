@@ -28,7 +28,6 @@
 #include <logic.h>
 #include <config.h>
 // #include <Uart_Lib.h>
-#include <uart_lib_conf.h>
 
 /* FUNCTION PROTOTYPES */
 
