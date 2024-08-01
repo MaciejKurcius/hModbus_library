@@ -1,10 +1,8 @@
-
-
 #include "mmodbus.h"
 #include "usart.h"
 
 MModBus_t mmodbus;
-extern volatile SysTick_counter;
+extern volatile uint32_t SysTick_counter;
 
 //#####################################################################################################
 #if( _MMODBUS_RTU == 1)
@@ -43,6 +41,7 @@ static const uint16_t wCRCTable[] =
   0X4400, 0X84C1, 0X8581, 0X4540, 0X8701, 0X47C0, 0X4680, 0X8641,
   0X8201, 0X42C0, 0X4380, 0X8341, 0X4100, 0X81C1, 0X8081, 0X4040 
 };
+
 uint16_t mmodbus_crc16(const uint8_t *nData, uint16_t wLength)
 {
   uint8_t nTemp;
@@ -57,10 +56,12 @@ uint16_t mmodbus_crc16(const uint8_t *nData, uint16_t wLength)
 } 
 #endif
 //#####################################################################################################
-void mmodbus_callback(void)
+
+
+void mmodbus_rx_callback(void)
 {
-  if(LL_USART_IsActiveFlag_RXNE(_MMODBUS_USART) && LL_USART_IsEnabledIT_RXNE(_MMODBUS_USART))
-  {
+  // if(LL_USART_IsActiveFlag_RXNE(_MMODBUS_USART) && LL_USART_IsEnabledIT_RXNE(_MMODBUS_USART))
+  // {
     if(mmodbus.rxIndex <_MMODBUS_RXSIZE - 1)
     {
       mmodbus.rxBuf[mmodbus.rxIndex] = LL_USART_ReceiveData8(_MMODBUS_USART);      
@@ -68,14 +69,13 @@ void mmodbus_callback(void)
     }
     else
       LL_USART_ReceiveData8(_MMODBUS_USART);      
-  }
-  else
-  {
-    // LL_USART_ClearFlag_RXNE(_MMODBUS_USART);
-    ;
-  }
-  mmodbus.rxTime = SysTick_counter;
+  // }
+  // else
+  // {
+  //   LL_USART_ClearFlag_RXNE(_MMODBUS_USART);
+  // }
   // mmodbus.rxTime = HAL_GetTick();
+  mmodbus.rxTime = SysTick_counter;
 }
 
 //#####################################################################################################
@@ -133,7 +133,11 @@ void  mmodbus_callback_txDMA(void)
   #endif
   #endif
 }
+
 //##################################################################################################
+// wchodzi do tej funkcji na czas równy timeout lub do momentu aż UART pokaże że jest już w stanie idle 
+// zwraca ilość otrzymanych bajtów danych
+
 uint16_t mmodbus_receiveRaw(uint32_t timeout)
 {
   // uint32_t startTime = HAL_GetTick();
@@ -145,11 +149,14 @@ uint16_t mmodbus_receiveRaw(uint32_t timeout)
       return 0;
     // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->SR & UART_FLAG_IDLE))
     //   return mmodbus.rxIndex;
-    if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->ISR & UART_FLAG_IDLE))
+    // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->ISR & UART_FLAG_IDLE))
+    if ((mmodbus.rxIndex > 0) && (LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)))
       return mmodbus.rxIndex; 
     mmodbus_delay(1);  
   }    
+
 }  
+
 //##################################################################################################
 bool mmodbus_sendRaw(uint8_t *data, uint16_t size, uint32_t timeout)
 {
@@ -215,6 +222,7 @@ bool mmodbus_sendRaw(uint8_t *data, uint16_t size, uint32_t timeout)
   return true;
 }
 //##################################################################################################
+
 bool mmodbus_init(uint32_t timeout)
 {
   HAL_GPIO_WritePin(_MMODBUS_CTRL_GPIO, _MMODBUS_CTRL_PIN, GPIO_PIN_RESET);
@@ -227,6 +235,7 @@ bool mmodbus_init(uint32_t timeout)
   mmodbus.timeout = timeout;
   return true;
 }
+
 //##################################################################################################
 void mmodbus_set16bitOrder(MModBus_16bitOrder_t MModBus_16bitOrder_)
 {

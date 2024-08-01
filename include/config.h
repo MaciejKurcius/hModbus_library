@@ -20,7 +20,8 @@
 #define MAIN_LOOP_DELAY	100
 
 /* UART */
-#define UART_BAUD_RATE			            38400
+// #define UART_BAUD_RATE 38400
+#define UART_BAUD_RATE 9600
 
 #endif
 /****END OF FILE****/

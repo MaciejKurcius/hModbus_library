@@ -10,11 +10,6 @@
 #ifndef __LOGIC_H
 #define __LOGIC_H
 
-/* INCLUDES */
-
-#include <main.h>
-#include <string.h>
-
 /* DEFINES */
 
 #define ARRAY_LENGTH(arg)	(sizeof(arg) / sizeof(arg[0]))
@@ -37,6 +32,7 @@ void MainLogicLoop(void);
 void PowerOnInitProcedure(void);
 void PowerOnPushButtonItProcedure(void);
 void SetPowerPushButtonLed(OutputModeTypeDef Mode);
+void SwitchOnOffPowerLock(OutputModeTypeDef Mode);
 
 #endif
 /****END OF FILE****/
