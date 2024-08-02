@@ -145,13 +145,17 @@ uint16_t mmodbus_receiveRaw(uint32_t timeout)
   while(1)
   {
     // if(HAL_GetTick() - startTime > timeout)
+
+    if(SysTick_counter - startTime > timeout)  // working correctly
+      return mmodbus.rxIndex; 
+
     if(SysTick_counter - startTime > timeout)
       return 0;
     // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->SR & UART_FLAG_IDLE))
     //   return mmodbus.rxIndex;
     // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->ISR & UART_FLAG_IDLE))
-    if ((mmodbus.rxIndex > 0) && (LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)))
-      return mmodbus.rxIndex; 
+    //   return mmodbus.rxIndex; 
+    // if ((mmodbus.rxIndex > 0) && (LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)))
     mmodbus_delay(1);  
   }    
 
@@ -554,7 +558,8 @@ bool mmodbus_readHoldingRegister16i(uint8_t slaveAddress, uint16_t number, uint1
 //##################################################################################################
 bool mmodbus_readHoldingRegisters16i(uint8_t slaveAddress, uint16_t startnumber, uint16_t length, uint16_t *data)
 {
-  bool ret = mmodbus_readHoldingRegisters8i(slaveAddress, startnumber, length * 1, (uint8_t*)data);
+  uint8_t data1[64];
+  bool ret = mmodbus_readHoldingRegisters8i(slaveAddress, startnumber, length * 1, (uint8_t*)data1);
   if(ret == true)
   {
     uint8_t tmp1[2],tmp2[2];
@@ -563,7 +568,7 @@ bool mmodbus_readHoldingRegisters16i(uint8_t slaveAddress, uint16_t startnumber,
       switch(mmodbus.byteOrder16)
       {
         case MModBus_16bitOrder_AB:
-          memcpy(tmp1, &data[i], 2);       
+          memcpy(tmp1, &data1[i], 2);       
           tmp2[0] = tmp1[0];
           tmp2[1] = tmp1[1];
           memcpy(&data[i], tmp2, 2);    

@@ -42,33 +42,17 @@ void MainLogicInit(void){
 
 void MainLogicLoop(void){
 	uint16_t delay = 1000;
+	uint16_t static RxData = 0;
 
-	uint16_t RxData[20] = {0};
 
-	// mmodbus_readHoldingRegisters16i(1,0, 20, RxData);
-	// LL_mDelay(delay);
 	mmodbus_writeHoldingRegister16i(1, 9, 0);
 	LL_mDelay(delay);
-	// mmodbus_readHoldingRegisters16i(1,0, 20, RxData);
-	// LL_mDelay(delay);
+	mmodbus_readHoldingRegister16i(1, 9, &RxData);
+	LL_mDelay(delay);
 	mmodbus_writeHoldingRegister16i(1, 9, 1);
 	LL_mDelay(delay);
-	// mmodbus_readHoldingRegisters16i(1,0, 20, RxData);
-	// LL_mDelay(delay);
-
-
-	// mmodbus_readCoil(10, 7, &RxCoilState);
-	// LL_mDelay(delay);
-	// mmodbus_writeCoil(10, 7, 1);
-	// LL_mDelay(delay);
-	// mmodbus_readCoil(10, 7, &RxCoilState);
-	// LL_mDelay(delay);
-	// mmodbus_writeCoil(10, 7, 0);
-	// LL_mDelay(delay);
-	// mmodbus_readCoil(10, 7, &RxCoilState);
-	// LL_mDelay(delay);
-	// mmodbus_writeCoil(10, 7, 1);
-	// LL_mDelay(delay);
+	mmodbus_readHoldingRegister16i(1, 9, &RxData);
+	LL_mDelay(delay);
 
 }
 
