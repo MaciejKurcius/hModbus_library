@@ -33,6 +33,8 @@ void PowerOnInitProcedure(void);
 void PowerOnPushButtonItProcedure(void);
 void SetPowerPushButtonLed(OutputModeTypeDef Mode);
 void SwitchOnOffPowerLock(OutputModeTypeDef Mode);
+void DebugGpio1(OutputModeTypeDef Mode);
+void DebugGpio2(OutputModeTypeDef Mode);
 
 #endif
 /****END OF FILE****/

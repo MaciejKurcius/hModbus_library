@@ -36,7 +36,12 @@ void MainLogicInit(void){
 	LL_mDelay(50);
 	PowerOnInitProcedure();
 	mmodbus_init(2500);
-	TestFunc();
+	DebugGpio1(Toggle);
+	DebugGpio1(Toggle);
+	DebugGpio1(Off);
+	DebugGpio2(Toggle);
+	DebugGpio2(Toggle);
+	DebugGpio2(Off);
   
 }
 
@@ -131,5 +136,25 @@ void SwitchOnOffPowerLock(OutputModeTypeDef Mode){
 	default: break;
 	}
 }
+
+void DebugGpio1(OutputModeTypeDef Mode){
+	switch(Mode){
+	case On:		LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_5);	break;
+	case Off:		LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_5);	break;
+	case Toggle:	LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_5);	break;
+	default: break;
+	}
+}
+
+void DebugGpio2(OutputModeTypeDef Mode){
+	switch(Mode){
+	case On:		LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_8);	break;
+	case Off:		LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_8);	break;
+	case Toggle:	LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_8);	break;
+	default: break;
+	}
+}
+
+
 
 /****END OF FILE****/

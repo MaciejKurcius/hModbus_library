@@ -1,5 +1,6 @@
 #include "mmodbus.h"
 #include "usart.h"
+#include "logic.h"
 
 MModBus_t mmodbus;
 extern volatile uint32_t SysTick_counter;
@@ -60,8 +61,7 @@ uint16_t mmodbus_crc16(const uint8_t *nData, uint16_t wLength)
 
 void mmodbus_rx_callback(void)
 {
-  // if(LL_USART_IsActiveFlag_RXNE(_MMODBUS_USART) && LL_USART_IsEnabledIT_RXNE(_MMODBUS_USART))
-  // {
+
     if(mmodbus.rxIndex <_MMODBUS_RXSIZE - 1)
     {
       mmodbus.rxBuf[mmodbus.rxIndex] = LL_USART_ReceiveData8(_MMODBUS_USART);      
@@ -69,12 +69,7 @@ void mmodbus_rx_callback(void)
     }
     else
       LL_USART_ReceiveData8(_MMODBUS_USART);      
-  // }
-  // else
-  // {
-  //   LL_USART_ClearFlag_RXNE(_MMODBUS_USART);
-  // }
-  // mmodbus.rxTime = HAL_GetTick();
+
   mmodbus.rxTime = SysTick_counter;
 }
 
@@ -140,25 +135,42 @@ void  mmodbus_callback_txDMA(void)
 
 uint16_t mmodbus_receiveRaw(uint32_t timeout)
 {
-  // uint32_t startTime = HAL_GetTick();
   uint32_t startTime = SysTick_counter;
-  while(1)
-  {
-    // if(HAL_GetTick() - startTime > timeout)
 
-    if(SysTick_counter - startTime > timeout)  // working correctly
-      return mmodbus.rxIndex; 
+  while(1){
+    mmodbus_delay(1);  
+
+    // if(SysTick_counter - startTime > timeout)  // working correctly
+    //   return mmodbus.rxIndex; 
 
     if(SysTick_counter - startTime > timeout)
       return 0;
-    // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->SR & UART_FLAG_IDLE))
-    //   return mmodbus.rxIndex;
-    // if ((mmodbus.rxIndex > 0) && (_MMODBUS_USART->ISR & UART_FLAG_IDLE))
-    //   return mmodbus.rxIndex; 
-    // if ((mmodbus.rxIndex > 0) && (LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)))
-    mmodbus_delay(1);  
-  }    
 
+    // only for debug
+    if(mmodbus.rxIndex > 0)
+      DebugGpio1(On);
+    else
+      DebugGpio1(Off);
+    
+    if(LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)){
+      // LL_USART_ClearFlag_IDLE(USART1);
+      DebugGpio2(On);
+    }
+    else
+      DebugGpio2(Off);
+
+    if(mmodbus.rxIndex > 0){
+      if(LL_USART_IsActiveFlag_IDLE(_MMODBUS_USART)){
+        return mmodbus.rxIndex; 
+      }
+    }
+    else{
+      LL_USART_ClearFlag_IDLE(USART1);
+    } 
+
+
+
+  }
 }  
 
 //##################################################################################################
@@ -169,7 +181,6 @@ bool mmodbus_sendRaw(uint8_t *data, uint16_t size, uint32_t timeout)
   mmodbus.txBusy = 1;
   memset(mmodbus.rxBuf, 0, _MMODBUS_RXSIZE);
   mmodbus.rxIndex = 0;
-  // uint32_t startTime = HAL_GetTick();
   uint32_t startTime = SysTick_counter;
   HAL_GPIO_WritePin(_MMODBUS_CTRL_GPIO, _MMODBUS_CTRL_PIN, GPIO_PIN_SET);
   mmodbus_delay(1);
@@ -179,7 +190,6 @@ bool mmodbus_sendRaw(uint8_t *data, uint16_t size, uint32_t timeout)
     while (!LL_USART_IsActiveFlag_TXE(_MMODBUS_USART))
     {
       mmodbus_delay(1);
-      // if(HAL_GetTick() - startTime > timeout);
       if(SysTick_counter - startTime > timeout)
       {
         HAL_GPIO_WritePin(_MMODBUS_CTRL_GPIO, _MMODBUS_CTRL_PIN, GPIO_PIN_RESET);
@@ -192,7 +202,6 @@ bool mmodbus_sendRaw(uint8_t *data, uint16_t size, uint32_t timeout)
   }  
   while (!LL_USART_IsActiveFlag_TC(_MMODBUS_USART))
   {
-    // if(HAL_GetTick() - startTime > timeout)
     if(SysTick_counter - startTime > timeout)
     {
       HAL_GPIO_WritePin(_MMODBUS_CTRL_GPIO, _MMODBUS_CTRL_PIN, GPIO_PIN_RESET);

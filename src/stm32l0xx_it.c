@@ -132,8 +132,9 @@ void USART1_IRQHandler(void){
     mmodbus_rx_callback();
 	}
 	if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
-    ;
+
 	}
+
 }
 
 /****END OF FILE****/
