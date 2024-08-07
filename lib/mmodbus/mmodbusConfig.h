@@ -3,8 +3,7 @@
 
 
 // config for digislave
-// x86_64-linux-gnu/diagslave -m rtu -o 1 -a 10 -b 38400 -d 8 -p none  /dev/ttyUSB0
-
+// x86_64-linux-gnu/diagslave -m rtu -o 1 -a 1 -b 9600 -d 8 -p none  /dev/ttyUSB0
 
 #define _MMODBUS_FREERTOS         0
 #define _MMODBUS_RTU              1

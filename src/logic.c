@@ -15,7 +15,7 @@
 #include <hModbusLib.h>
 
 /* VARIABLES */
-
+extern MModBus_t mmodbus;
 /* FUNCTIONS */
 
 void HardFaultInfLoop(void){
@@ -33,30 +33,96 @@ void HardFaultInfLoop(void){
 
 void MainLogicInit(void){
 	BoardInit();
-	LL_mDelay(50);
+	LL_mDelay(2000);
 	PowerOnInitProcedure();
-	mmodbus_init(2500);
-	DebugGpio1(Toggle);
-	DebugGpio1(Toggle);
-	DebugGpio1(Off);
-	DebugGpio2(Toggle);
-	DebugGpio2(Toggle);
-	DebugGpio2(Off);
-  
+	mmodbus_init(500);
 }
 
 void MainLogicLoop(void){
-	uint16_t delay = 1000;
-	uint16_t static RxData = 0;
+	uint16_t delay = 1;
 
+	/* Input read test */
+	uint8_t static RxInput = 7;
+
+	mmodbus_readDiscreteInput(1, 5, &RxInput);
+	LL_mDelay(delay);
+
+	/* Input register read test */
+	uint16_t static RxInputReg = 7;
+
+	mmodbus_readInputRegister16i(1, 5, &RxInputReg);
+	LL_mDelay(delay);
+
+	/* Coil register read write test */
+	uint8_t static RxCoil = 0;
+
+	mmodbus_writeCoil(1, 5, 0);
+	LL_mDelay(delay);
+	mmodbus_readCoil(1, 5, &RxCoil); //ok
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 5, 1);
+	LL_mDelay(delay);
+	mmodbus_readCoil(1, 5, &RxCoil); //ok
+	LL_mDelay(delay);
+
+	/* Coil registers read write test */
+	uint8_t TxCoilZero[5] = {0};
+	uint8_t TxCoil[5] = {1, 0, 0, 1, 1};
+	uint8_t static RxCoils;
+
+	mmodbus_writeCoil(1, 10, TxCoilZero[0]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 11, TxCoilZero[1]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 12, TxCoilZero[2]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 13, TxCoilZero[3]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 14, TxCoilZero[4]);
+	LL_mDelay(delay);
+
+	mmodbus_readCoils(1, 10, 5, &RxCoils);
+	LL_mDelay(delay);
+
+	mmodbus_writeCoil(1, 10, TxCoil[0]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 11, TxCoil[1]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 12, TxCoil[2]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 13, TxCoil[3]);
+	LL_mDelay(delay);
+	mmodbus_writeCoil(1, 14, TxCoil[4]);
+	LL_mDelay(delay);
+
+	mmodbus_readCoils(1, 10, 5, &RxCoils); //ok - but the rx data length is to small. 
+	LL_mDelay(delay);
+
+	/* Holding 16i register read write test */
+	uint16_t static RxHolding16iData = 0;
 
 	mmodbus_writeHoldingRegister16i(1, 9, 0);
 	LL_mDelay(delay);
-	mmodbus_readHoldingRegister16i(1, 9, &RxData);
+	mmodbus_readHoldingRegister16i(1, 9, &RxHolding16iData);
 	LL_mDelay(delay);
-	mmodbus_writeHoldingRegister16i(1, 9, 1);
+	mmodbus_writeHoldingRegister16i(1, 9, 5678);
 	LL_mDelay(delay);
-	mmodbus_readHoldingRegister16i(1, 9, &RxData);
+	mmodbus_readHoldingRegister16i(1, 9, &RxHolding16iData);  
+	LL_mDelay(delay);
+
+
+	/* Holding registers read write test */
+	uint16_t static TxHolding16iDataZero[5] = {0};
+	uint16_t static TxHolding16iData[5] = {21, 37, 7, 2137, 458};
+	uint16_t static RxHolding16iDataArr[5] = {0};
+
+	mmodbus_writeHoldingRegisters16i(1, 9, 5, TxHolding16iDataZero);
+	LL_mDelay(delay);
+	mmodbus_readHoldingRegisters16i(1, 9, 5, RxHolding16iDataArr);
+	LL_mDelay(delay);
+	mmodbus_writeHoldingRegisters16i(1, 9, 5, TxHolding16iData);
+	LL_mDelay(delay);
+	mmodbus_readHoldingRegisters16i(1, 9, 5, RxHolding16iDataArr); // ok need to change byte order for digislave
 	LL_mDelay(delay);
 
 }
