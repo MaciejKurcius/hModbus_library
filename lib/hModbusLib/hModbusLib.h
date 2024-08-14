@@ -1,7 +1,7 @@
 #ifndef hMODBUS_LIB_H
 #define hMODBUS_LIB_H
 
-#include "hModbusLib_conf.h"
+#include "hModbusLibConf.h"
 #include <stdbool.h>
 #include  <string.h>
 
