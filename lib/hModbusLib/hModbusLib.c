@@ -96,7 +96,7 @@ bool hModbusSendRawData(hModbusTypeDef Handle, uint8_t *Data, uint16_t size){
         while (!hModbusGetUartTxeFlag(Handle)){
             hModbusDelay(1);
             if(hModbusGetSystemClock() - startTime > Handle.TxTimeout){
-                hModbusReseGpioPin(Handle.CtrlOut);
+                hModbusResetGpioPin(Handle.CtrlOut);
                 Handle.txBusy = 0;
                 return false;
             }   
@@ -107,13 +107,13 @@ bool hModbusSendRawData(hModbusTypeDef Handle, uint8_t *Data, uint16_t size){
 
     while (!hModbusGetUartTcFlag(Handle)){
         if(hModbusGetSystemClock() - startTime > Handle.TxTimeout){
-                hModbusReseGpioPin(Handle.CtrlOut);
+                hModbusResetGpioPin(Handle.CtrlOut);
                 Handle.txBusy = 0;
                 return false;
             }    
     }
 
-    hModbusReseGpioPin(Handle.CtrlOut);
+    hModbusResetGpioPin(Handle.CtrlOut);
     Handle.txBusy = 0;
     return true;
 }
@@ -122,7 +122,7 @@ bool hModbusInit(hModbusTypeDef Handle, UART_HANDLE_TYPE Uart, uint32_t CtrlOutP
     memset(&Handle, 0, sizeof(Handle));
     Handle.CtrlOut.Pin = CtrlOutPin;
     Handle.CtrlOut.Port = CtrlOutPort;
-    hModbusReseGpioPin(Handle.CtrlOut);
+    hModbusResetGpioPin(Handle.CtrlOut);
     Handle.byteOrder16 = hModbus16BitOrder_AB;
     Handle.byteOrder32 = hModbus32BitOrder_ABCD;
     Handle.UartHandle = Uart;

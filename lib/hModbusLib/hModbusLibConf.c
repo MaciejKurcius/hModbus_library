@@ -16,12 +16,12 @@ uint32_t hModbusGetSystemClock(void){
 }
 
 // Write function to set GPIO pin
-void SetGpioPin(hModbusCtrlOutTypeDef Output){
+void hModbusSetGpioPin(hModbusCtrlOutTypeDef Output){
     LL_GPIO_SetOutputPin(Output.Port, Output.Pin);
 }
 
 // Write function to reset GPIO pin
-void ResetGpioPin(hModbusCtrlOutTypeDef Output){
+void hModbusResetGpioPin(hModbusCtrlOutTypeDef Output){
     LL_GPIO_ResetOutputPin(Output.Port, Output.Pin);
 }
 
@@ -43,12 +43,12 @@ uint8_t hModbusUsartRx8(hModbusTypeDef Handle){
 /* UART Flags */
 
 // Write function from your framework which return UART Iddle flag
-uint32_t GetUartIdleFlag(hModbusTypeDef Handle){
+uint32_t hModbusGetUartIdleFlag(hModbusTypeDef Handle){
     return LL_USART_IsActiveFlag_IDLE(Handle.UartHandle);
 }
 
 // Write function from your framework to clear UART Iddle flag
-void ClearUartIdleFlag(hModbusTypeDef Handle){
+void hModbusClearUartIdleFlag(hModbusTypeDef Handle){
     LL_USART_ClearFlag_IDLE(Handle.UartHandle);
 }
 

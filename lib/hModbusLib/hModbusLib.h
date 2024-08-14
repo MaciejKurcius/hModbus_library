@@ -55,7 +55,7 @@ typedef struct{
 extern void hModbusDelay(uint32_t);
 extern uint32_t hModbusGetSystemClock(void);
 extern void hModbusSetGpioPin(hModbusCtrlOutTypeDef Output);
-extern void hModbusReseGpioPin(hModbusCtrlOutTypeDef Output);
+extern void hModbusResetGpioPin(hModbusCtrlOutTypeDef Output);
 extern void hModbusUsartTx8(hModbusTypeDef Handle, uint8_t TxData);
 extern uint8_t hModbusUsartRx8(hModbusTypeDef Handle);
 extern uint32_t hModbusGetUartIdleFlag(hModbusTypeDef Handle);

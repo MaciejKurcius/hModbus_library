@@ -16,6 +16,7 @@
 
 /* VARIABLES */
 extern MModBus_t mmodbus;
+hModbusTypeDef hModbusHandle;
 /* FUNCTIONS */
 
 void HardFaultInfLoop(void){
@@ -32,6 +33,7 @@ void HardFaultInfLoop(void){
  */
 
 void MainLogicInit(void){
+	hModbusInit(hModbusHandle, USART1, LL_GPIO_PIN_12, GPIOA, 2500, 100);
 	BoardInit();
 	LL_mDelay(2000);
 	PowerOnInitProcedure();
@@ -44,6 +46,7 @@ void MainLogicLoop(void){
 	/* Input read test */
 	uint8_t static RxInput = 7;
 
+	hModbusReadDiscreteInput(hModbusHandle, 1, 5, &RxInput);
 	mmodbus_readDiscreteInput(1, 5, &RxInput);
 	LL_mDelay(delay);
 
