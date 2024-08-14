@@ -127,7 +127,7 @@ void EXTI4_15_IRQHandler(void){
  * \return void
  */
 void USART1_IRQHandler(void){
-  // mmodbus_callback();
+  
 	if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
     mmodbus_rx_callback();
 	}
