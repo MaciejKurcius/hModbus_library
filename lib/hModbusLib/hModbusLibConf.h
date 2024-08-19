@@ -11,4 +11,6 @@
 #define UART_HANDLE_TYPE USART_TypeDef*     // Write your UART type def struct ptr from your framework
 #define GPIO_TYPE_DEF GPIO_TypeDef*         // Write your GPIO port type def struct ptr from your framework
 
+void hModbusMaster1UartInit(void);
+
 #endif

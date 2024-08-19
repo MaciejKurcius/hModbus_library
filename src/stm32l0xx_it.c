@@ -23,8 +23,10 @@
 #include "main.h"
 #include "stm32l0xx_it.h"
 #include "mmodbus.h"
-
+#include "hModbusLib.h"
+#include "logic.h"
 extern volatile uint32_t SysTick_counter;
+extern hModbusTypeDef hModbusMaster1Handle;
 
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
@@ -127,14 +129,7 @@ void EXTI4_15_IRQHandler(void){
  * \return void
  */
 void USART1_IRQHandler(void){
-  
-	if(LL_USART_IsActiveFlag_RXNE(USART1)){	//check if receive data register is not empty
-    mmodbus_rx_callback();
-	}
-	if(LL_USART_IsActiveFlag_TXE(USART1)){	//check if transmit data register is not empty
-
-	}
-
+  hModbusRxCallback(&hModbusMaster1Handle);
 }
 
 /****END OF FILE****/

@@ -62,7 +62,7 @@ void BoardInit(void){
 	SystemClockConfig();
 	SysTickInit();
 	GpioInit();
-	UartHardwareInit();
+	// UartHardwareInit();
 }
 
 /****END OF FILE****/
