@@ -49,7 +49,7 @@ void MainLogicLoop(void){
 	/* Input read test */
 	uint8_t static RxInput = 7;
 
-	hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 5, &RxInput);
+	hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
 	LL_mDelay(delay);
 
 	/* Input register read test */

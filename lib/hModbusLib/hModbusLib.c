@@ -93,7 +93,7 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle, uint8_t DataLength
 
 bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame){
   if(RxFrame.Cmd != TxFrame.Cmd) return false;
-  if(RxFrame.SlaveAddr != TxFrame.Cmd) return false;
+  if(RxFrame.SlaveAddr != TxFrame.SlaveAddr) return false;
   if(RxFrame.Crc != TxFrame.Crc) return false;
   return true;
 }
@@ -192,32 +192,26 @@ void hModbusSet32BitOrder(hModbusTypeDef* Handle, hModbus32BitOrderTypeDef hModb
 /* READ COIL */
 
 bool hModbusReadCoils(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Startnumber, uint16_t Length, uint8_t *Data){
+  // Compose and sen TX frame
   uint16_t TxData[] = {Startnumber, Length};
   hModbusFrameTypeDef TxFrame = hModbusComposeFrame16(SlaveAddress, hModbusCmd_ReadCoilStatus, TxData, 2);
   hModbusSendFrame(Handle, TxFrame);
 
+  // Receive and parse RX frame
   if(hModbusReveiceRawData(Handle) == 0) // check if Rx data length is empty
     return false;
-
   hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle, Handle->rxBuf[2]+1);
+
+  // Check RX data
   if(hModbusCheckRxFrame(RxFrame, TxFrame)){
     if(Data != NULL){
       memcpy(Data, &RxFrame.Data[1], RxFrame.DataLength-1);
       return true;
     }
   }
-  return false;
 
-  // if(Handle->rxBuf[0] != SlaveAddress)
-  //   return false;
-  // if(Handle->rxBuf[1] != hModbusCmd_ReadCoilStatus)
-  //   return false;
-  // Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
-  // if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
-  //   return false; 
-  // if(Data != NULL)
-  //   memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
-  // return true;
+  // if error - return false
+  return false;
 }
 
 bool hModbusReadCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint8_t *Data){
@@ -227,31 +221,49 @@ bool hModbusReadCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Numb
 /* READ DISCRETE INPUTS */
 
 bool hModbusReadDiscreteInputs(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t StartNumber, uint16_t Length, uint8_t *Data){
-  uint8_t TxData[8];
-  TxData[0] = SlaveAddress;
-  TxData[1] = hModbusCmd_ReadDiscreteInputs;
-  TxData[2] = (StartNumber & 0xFF00) >> 8;
-  TxData[3] = (StartNumber & 0x00FF);
-  TxData[4] = (Length & 0xFF00) >> 8;
-  TxData[5] = (Length & 0x00FF);
-  static uint16_t  Crc;
-  Crc = hModbusCrc16(TxData, 6);
-  TxData[6] = (Crc & 0x00FF);
-  TxData[7] = (Crc & 0xFF00) >> 8;
-  hModbusSendRawData(Handle, TxData, 8);
-  uint16_t RecLen = hModbusReveiceRawData(Handle);
-  if(RecLen == 0)
+  uint16_t TxData[] = {StartNumber, Length};
+  hModbusFrameTypeDef TxFrame = hModbusComposeFrame16(SlaveAddress, hModbusCmd_ReadDiscreteInputs, TxData, 2);
+  hModbusSendFrame(Handle, TxFrame);
+
+  if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  if(Handle->rxBuf[0] != SlaveAddress)
-    return false;
-  if(Handle->rxBuf[1] != hModbusCmd_ReadDiscreteInputs)
-    return false;
-  Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
-  if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
-    return false; 
-  if(Data != NULL)
-    memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
-  return true;
+  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle, Handle->rxBuf[2]+1);
+  
+  if(hModbusCheckRxFrame(RxFrame, TxFrame)){
+    if(Data != NULL){
+      memcpy(Data, &RxFrame.Data[1], RxFrame.DataLength-1);
+      return true;
+    }
+  }
+
+  return false;
+
+
+  // uint8_t TxData[8];
+  // TxData[0] = SlaveAddress;
+  // TxData[1] = hModbusCmd_ReadDiscreteInputs;
+  // TxData[2] = (StartNumber & 0xFF00) >> 8;
+  // TxData[3] = (StartNumber & 0x00FF);
+  // TxData[4] = (Length & 0xFF00) >> 8;
+  // TxData[5] = (Length & 0x00FF);
+  // static uint16_t  Crc;
+  // Crc = hModbusCrc16(TxData, 6);
+  // TxData[6] = (Crc & 0x00FF);
+  // TxData[7] = (Crc & 0xFF00) >> 8;
+  // hModbusSendRawData(Handle, TxData, 8);
+  // uint16_t RecLen = hModbusReveiceRawData(Handle);
+  // if(RecLen == 0)
+  //   return false;
+  // if(Handle->rxBuf[0] != SlaveAddress)
+  //   return false;
+  // if(Handle->rxBuf[1] != hModbusCmd_ReadDiscreteInputs)
+  //   return false;
+  // Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
+  // if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
+  //   return false; 
+  // if(Data != NULL)
+  //   memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
+  // return true;
 }
 
 bool hModbusReadDiscreteInput(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint8_t *Data)
