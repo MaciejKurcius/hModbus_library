@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include  <string.h>
 
+#define HMODBUS_FRAME_LEN(arg) (1+1+(arg)+2)
+
 typedef enum
 {
   hModbusCmd_ReadCoilStatus = 1,
@@ -40,9 +42,17 @@ typedef struct{
 }hModbusCtrlOutTypeDef;
 
 typedef struct{
+  uint8_t SlaveAddr;
+  uint8_t Cmd;
+  uint8_t Data[HMODBUS_RXTX_SIZE];
+  uint8_t DataLength;
+  uint16_t Crc;
+}hModbusFrameTypeDef;
+
+typedef struct{
     UART_HANDLE_TYPE            UartHandle;
     uint16_t                    rxIndex;  
-    uint8_t                     rxBuf[HMODBUS_RX_SIZE];
+    uint8_t                     rxBuf[HMODBUS_RXTX_SIZE];
     uint32_t                    rxTime;
     uint8_t                     txBusy;
     uint32_t                    RxTimeout; 
@@ -67,7 +77,11 @@ extern void hModbusUsartInit(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartRxneFlag(hModbusTypeDef* Handle);
 extern void hModbusEnableRxneIt(hModbusTypeDef* Handle);
 
-
+hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
+hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
+void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame);
+hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle, uint8_t DataLength);
+bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 void hModbusRxCallback(hModbusTypeDef* Handle);
 uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle);
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *data, uint16_t size);

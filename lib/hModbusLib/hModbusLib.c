@@ -49,9 +49,58 @@ uint16_t hModbusCrc16(const uint8_t *nData, uint16_t wLength)
   return wCRCWord;
 } 
 
+hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength){
+  hModbusFrameTypeDef Frame = {0};
+  if(DataLength > HMODBUS_RXTX_SIZE)
+    return Frame;
+  Frame.SlaveAddr = Addr;
+  Frame.Cmd = Cmd;
+  Frame.DataLength = DataLength;
+  memcpy(Frame.Data, Data, DataLength);
+  return Frame;
+}
+
+hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength){
+  uint8_t Data2Send[HMODBUS_RXTX_SIZE] = {0};
+  for(uint8_t i=0; i<DataLength; i++){
+    Data2Send[2*i] = (Data[i] & 0xFF00) >> 8;
+    Data2Send[2*i+1] = Data[i] & 0x00FF;
+  }
+  return hModbusComposeFrame8(Addr, Cmd, Data2Send, DataLength*2);
+}
+
+void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame){
+  uint8_t TxData[HMODBUS_FRAME_LEN(HMODBUS_RXTX_SIZE)] = {0};
+  TxData[0] = Frame.SlaveAddr;
+  TxData[1] = Frame.Cmd;
+  memcpy(&TxData[2], Frame.Data, Frame.DataLength);
+  uint16_t Crc = hModbusCrc16(TxData, Frame.DataLength+2);
+  TxData[1+1+Frame.DataLength+0] = (Crc & 0x00FF);
+  TxData[1+1+Frame.DataLength+1] = (Crc & 0xFF00) >> 8;
+  hModbusSendRawData(Handle, TxData, HMODBUS_FRAME_LEN(Frame.DataLength));
+}
+
+hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle, uint8_t DataLength){
+  hModbusFrameTypeDef Frame = {0};
+  Frame.DataLength = DataLength;
+  Frame.SlaveAddr = Handle->rxBuf[0];
+  Frame.Cmd = Handle->rxBuf[1];
+  memcpy(Frame.Data, &Handle->rxBuf[2], DataLength);
+  Frame.Crc = (Handle->rxBuf[1+1+DataLength+0] & 0x00FF);
+  Frame.Crc = (Handle->rxBuf[1+1+DataLength+1] & 0xFF00) >> 8;
+  return Frame;
+}
+
+bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame){
+  if(RxFrame.Cmd != TxFrame.Cmd) return false;
+  if(RxFrame.SlaveAddr != TxFrame.Cmd) return false;
+  if(RxFrame.Crc != TxFrame.Crc) return false;
+  return true;
+}
+
 void hModbusRxCallback(hModbusTypeDef* Handle){
   if(hModbusGetUartRxneFlag(Handle)){
-      if(Handle->rxIndex < HMODBUS_RX_SIZE - 1){
+      if(Handle->rxIndex < HMODBUS_RXTX_SIZE - 1){
           Handle->rxBuf[Handle->rxIndex] = hModbusUsartRx8(Handle);      
           Handle->rxIndex++;
       }
@@ -84,7 +133,7 @@ bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
         hModbusDelay(1);
     }
     Handle->txBusy = 1;
-    memset(Handle->rxBuf, 0, HMODBUS_RX_SIZE);
+    memset(Handle->rxBuf, 0, HMODBUS_RXTX_SIZE);
     Handle->rxIndex = 0;
     uint32_t startTime = hModbusGetSystemClock();
     
@@ -143,31 +192,32 @@ void hModbusSet32BitOrder(hModbusTypeDef* Handle, hModbus32BitOrderTypeDef hModb
 /* READ COIL */
 
 bool hModbusReadCoils(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Startnumber, uint16_t Length, uint8_t *Data){
-  uint8_t TxData[8];
-  TxData[0] = SlaveAddress;
-  TxData[1] = hModbusCmd_ReadCoilStatus;
-  TxData[2] = (Startnumber & 0xFF00) >> 8;
-  TxData[3] = (Startnumber & 0x00FF);
-  TxData[4] = (Length & 0xFF00) >> 8;
-  TxData[5] = (Length & 0x00FF);
-  static uint16_t  Crc;
-  Crc = hModbusCrc16(TxData, 6);
-  TxData[6] = (Crc & 0x00FF);
-  TxData[7] = (Crc & 0xFF00) >> 8;
-  hModbusSendRawData(Handle, TxData, 8);
-  uint16_t RecLen = hModbusReveiceRawData(Handle);
-  if(RecLen == 0)
+  uint16_t TxData[] = {Startnumber, Length};
+  hModbusFrameTypeDef TxFrame = hModbusComposeFrame16(SlaveAddress, hModbusCmd_ReadCoilStatus, TxData, 2);
+  hModbusSendFrame(Handle, TxFrame);
+
+  if(hModbusReveiceRawData(Handle) == 0) // check if Rx data length is empty
     return false;
-  if(Handle->rxBuf[0] != SlaveAddress)
-    return false;
-  if(Handle->rxBuf[1] != hModbusCmd_ReadCoilStatus)
-    return false;
-  Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
-  if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
-    return false; 
-  if(Data != NULL)
-    memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
-  return true;
+
+  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle, Handle->rxBuf[2]+1);
+  if(hModbusCheckRxFrame(RxFrame, TxFrame)){
+    if(Data != NULL){
+      memcpy(Data, &RxFrame.Data[1], RxFrame.DataLength-1);
+      return true;
+    }
+  }
+  return false;
+
+  // if(Handle->rxBuf[0] != SlaveAddress)
+  //   return false;
+  // if(Handle->rxBuf[1] != hModbusCmd_ReadCoilStatus)
+  //   return false;
+  // Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
+  // if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
+  //   return false; 
+  // if(Data != NULL)
+  //   memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
+  // return true;
 }
 
 bool hModbusReadCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint8_t *Data){
