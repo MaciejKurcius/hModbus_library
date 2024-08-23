@@ -78,14 +78,11 @@ extern uint32_t hModbusGetUartRxneFlag(hModbusTypeDef* Handle);
 extern void hModbusEnableRxneIt(hModbusTypeDef* Handle);
 
 
-// void hModbusSwapU16Data(uint16_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
-// void hModbusSwapU32Data(uint32_t* Data, uint8_t DataLength, hModbus32BitOrderTypeDef BitOrder);
+
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
-// void hModbusSwapU32DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
 hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
 void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame);
-// hModbusFrameTypeDef hModbusParseFrameRaw(hModbusTypeDef* Handle, uint16_t DataLength);
 hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle);
 bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);

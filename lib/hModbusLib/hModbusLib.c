@@ -49,67 +49,6 @@ uint16_t hModbusCrc16(const uint8_t *nData, uint16_t wLength)
   return wCRCWord;
 } 
 
-// void hModbusSwapU16Data(uint16_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder){
-//   if(Data == NULL)
-//     return;
-//   if(BitOrder == hModbus16BitOrder_BA){     // AB normal
-//     for(uint8_t i=0; i < DataLength; i++){
-//       uint16_t TempData = Data[i];
-//       Data[i] = (TempData & 0xFF00 >> 8);   // xA
-//       Data[i] += (TempData & 0x00FF << 8);  // Bx
-//     }
-//   }
-// }
-
-// void hModbusSwapU32Data(uint32_t* Data, uint8_t DataLength, hModbus32BitOrderTypeDef BitOrder){
-//   if(Data == NULL)
-//     return;
-//   if(BitOrder == hModbus32BitOrder_BADC){       //ABCD normal
-//     for(uint8_t i=0; i < DataLength; i++){
-//       uint32_t TempData = Data[i];
-//       Data[i] = (TempData & 0xFF000000 >> 8);   // xAxx 
-//       Data[i] += (TempData & 0x00FF0000 << 8);  // Bxxx
-//       Data[i] += (TempData & 0x0000FF00 >> 8);  // xxxC 
-//       Data[i] += (TempData & 0x000000FF << 8);  // xxDx
-//     }
-//   }
-
-//   if(BitOrder == hModbus32BitOrder_CDAB){       
-//     for(uint8_t i=0; i < DataLength; i++){
-//       uint32_t TempData = Data[i];
-//       Data[i] = (TempData & 0xFF000000 >> 16);   // xxAx 
-//       Data[i] += (TempData & 0x00FF0000 >> 16);  // xxxB
-//       Data[i] += (TempData & 0x0000FF00 << 16);  // Cxxx 
-//       Data[i] += (TempData & 0x000000FF << 16);  // xDxx
-//     }
-//   }
-
-//   if(BitOrder == hModbus32BitOrder_DCBA){       
-//     for(uint8_t i=0; i < DataLength; i++){
-//       uint32_t TempData = Data[i];
-//       Data[i] = (TempData & 0xFF000000 >> 24);   // xxxA 
-//       Data[i] += (TempData & 0x00FF0000 >> 8);  // xxBx
-//       Data[i] += (TempData & 0x0000FF00 << 8);  // xCxx 
-//       Data[i] += (TempData & 0x000000FF << 24);  // Dxxx
-//     }
-//   }
-// }
-
-// void hModbusByteArrayToU16Data(uint8_t* InputArray, uint16_t* OutputArray, uint16_t DataLength, hModbus16BitOrderTypeDef BitOrder){
-//   if(InputArray == NULL)
-//     return;
-//   if(BitOrder == hModbus16BitOrder_AB){
-//     for(uint8_t i=0; i<DataLength; i++){
-//       OutputArray[i] = InputArray[2*i];
-//       OutputArray[i] += (InputArray[2*i+1]) << 8;
-//     }    
-//     for(uint8_t i=0; i<DataLength; i++){
-//       OutputArray[i] = (InputArray[2*i]) << 8;
-//       OutputArray[i] += InputArray[2*i+1];
-//     }
-//   }
-// }
-
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder){
   uint8_t TempData[DataLength];
   switch (BitOrder)
@@ -156,17 +95,6 @@ void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame){
   TxData[1+1+Frame.DataLength+1] = (Crc & 0xFF00) >> 8;
   hModbusSendRawData(Handle, TxData, HMODBUS_FRAME_LEN(Frame.DataLength));
 }
-
-// hModbusFrameTypeDef hModbusParseFrameRaw(hModbusTypeDef* Handle, uint16_t DataLength){
-//   hModbusFrameTypeDef Frame = {0};
-//   Frame.DataLength = DataLength;
-//   Frame.SlaveAddr = Handle->rxBuf[0];
-//   Frame.Cmd = Handle->rxBuf[1];
-//   memcpy(Frame.Data, &Handle->rxBuf[2], DataLength);
-//   Frame.Crc = (Handle->rxBuf[1+1+DataLength+0] & 0x00FF);
-//   Frame.Crc = (Handle->rxBuf[1+1+DataLength+1] & 0xFF00) >> 8;
-//   return Frame;
-// }
 
 hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
   hModbusFrameTypeDef Frame = {0};
@@ -373,7 +301,6 @@ bool hModbusReadCoils(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Sta
       return true;
     }
   }
-
   // if error - return false
   return false;
 }
@@ -570,40 +497,6 @@ bool hModbusReadHoldingRegisters8i(hModbusTypeDef* Handle, uint8_t SlaveAddress,
     }
   }
   return false;
-
-  // uint8_t TxData[8];
-  // TxData[0] = SlaveAddress;
-  // TxData[1] = hModbusCmd_ReadHoldingRegisters;
-  // TxData[2] = (StartNumber & 0xFF00) >> 8;
-  // TxData[3] = (StartNumber & 0x00FF);
-  // TxData[4] = (Length & 0xFF00) >> 8;
-  // TxData[5] = (Length & 0x00FF);
-  // static uint16_t  Crc;
-  // Crc = hModbusCrc16(TxData, 6);
-  // TxData[6] = (Crc & 0x00FF);
-  // TxData[7] = (Crc & 0xFF00) >> 8;
-  // hModbusSendRawData(Handle, TxData, 8);
-  // uint16_t RecLen = hModbusReveiceRawData(Handle);
-  // if(RecLen == 0)
-  //   return false;
-  // if(Handle->rxBuf[0] != SlaveAddress)
-  //   return false;
-  // if(Handle->rxBuf[1] != hModbusCmd_ReadHoldingRegisters)
-  //   return false;
-  // Crc = hModbusCrc16(Handle->rxBuf, Handle->rxBuf[2] + 3);
-  // if(((Crc & 0x00FF) != Handle->rxBuf[Handle->rxBuf[2] + 3]) || (((Crc & 0xFF00) >> 8) != Handle->rxBuf[Handle->rxBuf[2] + 4]))
-  //   return false; 
-  // if(Data != NULL)
-  // {
-  //   for(uint8_t i=0 ; i<Handle->rxBuf[2] ; i+=2) i = 0 i < data length i = i+2
-  //   {    
-  //     uint8_t H = Handle->rxBuf[i+3];           // H = rxbuf[3] | H = rxBuf[5]
-  //     Handle->rxBuf[i+3] = Handle->rxBuf[i+3+1]; // rxBuf[3] = rxBuf[4] | rxbuf[5] = rxbuf[6]
-  //     Handle->rxBuf[i+3+1] = H;      // rxbuf4 = H | rxbuf[6] = H
-  //   }
-  //   memcpy(Data, &Handle->rxBuf[3], Handle->rxBuf[2]);   
-  // }
-  // return true;
 }
 
 /* Read holding reg 16 bit */
@@ -717,28 +610,6 @@ bool hModbusWriteCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Num
     return true;
 
   return false;
-  // uint8_t TxData[8];
-  // TxData[0] = SlaveAddress;
-  // TxData[1] = hModbusCmd_WriteSingleCoil;
-  // TxData[2] = (Number & 0xFF00) >> 8;
-  // TxData[3] = (Number & 0x00FF);
-  // if(Data == 0)
-  //   TxData[4] = 0;
-  // else
-  //   TxData[4] = 0xFF;
-  // TxData[5] = 0;
-  // static uint16_t  Crc;
-  // Crc = hModbusCrc16(TxData, 6);
-  // TxData[6] = (Crc & 0x00FF);
-  // TxData[7] = (Crc & 0xFF00) >> 8;
-  // hModbusSendRawData(Handle, TxData, 8);
-  // uint16_t RecLen = hModbusReveiceRawData(Handle);
-  // if(RecLen == 0)
-  //   return false;
-  // if(memcmp(TxData, Handle->rxBuf, 8) == 0)
-  //   return true;
-  // else
-  //   return false;
 }
 
 /* WRITE HODLING REGISTERS */
@@ -756,26 +627,6 @@ bool hModbusWriteHoldingRegister16i(hModbusTypeDef* Handle, uint8_t SlaveAddress
     return true;
 
   return false;
-
-  // uint8_t TxData[8];
-  // TxData[0] = SlaveAddress;
-  // TxData[1] = hModbusCmd_WriteSingleRegister;
-  // TxData[2] = (Number & 0xFF00) >> 8;
-  // TxData[3] = (Number & 0x00FF);
-  // TxData[4] = (Data & 0xFF00) >> 8;
-  // TxData[5] = Data & 0x00FF;
-  // static uint16_t  Crc;
-  // Crc = hModbusCrc16(TxData, 6);
-  // TxData[6] = (Crc & 0x00FF);
-  // TxData[7] = (Crc & 0xFF00) >> 8;
-  // hModbusSendRawData(Handle, TxData, 8);
-  // uint16_t RecLen = hModbusReveiceRawData(Handle);
-  // if(RecLen == 0)
-  //   return false;
-  // if(memcmp(TxData, Handle->rxBuf, 8) == 0)
-  //   return true;
-  // else
-  //   return false;
 }
 
 bool hModbusWriteHoldingRegisters16i(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t StartNumber, uint16_t Length, uint16_t *Data){
@@ -806,51 +657,4 @@ bool hModbusWriteHoldingRegisters16i(hModbusTypeDef* Handle, uint8_t SlaveAddres
       return true;
   }
   return false;
-
-/////////////////////////////
-	// if (Length==1){
-	// 	return hModbusWriteHoldingRegister16i(Handle, SlaveAddress, StartNumber, Data[0]);
-	// }
-	// else{
-	//   uint8_t TxData[7 + Length * 2 + 2];
-	//   TxData[0] = SlaveAddress;
-	//   TxData[1] = hModbusCmd_WriteMultipleRegisters;
-	//   TxData[2] = (StartNumber & 0xFF00) >> 8;
-	//   TxData[3] = (StartNumber & 0x00FF);
-	//   TxData[4] = (Length & 0xFF00) >> 8;
-	//   TxData[5] = (Length & 0x00FF);
-	//   TxData[6] = (Length * 2);
-	  // uint8_t Tmp1[2],Tmp2[2];
-	  // for(uint16_t i=0 ; i<Length ; i++){   
-    //   switch(Handle->byteOrder16){
-    //     case hModbus16BitOrder_AB:
-    //       memcpy(Tmp1, &Data[i], 2);       
-    //       Tmp2[0] = Tmp1[1];
-    //       Tmp2[1] = Tmp1[0];
-    //       memcpy(&TxData[7 + i * 2], Tmp2, 2);    
-    //       break;
-    //     default:
-    //       memcpy(Tmp1, &Data[i], 2);       
-    //       Tmp2[0] = Tmp1[0];
-    //       Tmp2[1] = Tmp1[1];
-    //       memcpy(&TxData[7 + i * 2], Tmp2, 2);    
-    //       break;
-    //   }
-	  // }    
-	//   static uint16_t Crc;
-	//   Crc = hModbusCrc16(TxData, 7 + Length * 2);
-	//   TxData[7 + Length * 2 + 0] = (Crc & 0x00FF);
-	//   TxData[7 + Length * 2 + 1] = (Crc & 0xFF00) >> 8;
-	//   hModbusSendRawData(Handle, TxData, 7 + Length * 2 + 2);
-	//   uint16_t RecLen = hModbusReveiceRawData(Handle);
-	//   if(RecLen == 0)
-  //     return false;
-	//   Crc = hModbusCrc16(TxData, 6);
-	//   TxData[6] = (Crc & 0x00FF);
-	//   TxData[7] = (Crc & 0xFF00) >> 8;  
-	//   if(memcmp(TxData, Handle->rxBuf, 8) == 0)
-  //     return true;
-	//   else
-  //     return false;
-	// }
 }
