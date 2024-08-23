@@ -10,7 +10,6 @@
 /* INCLUDES */
 
 #include <logic.h>
-#include <test_lib.h>
 #include "config.h"
 #include <hModbusLib.h>
 
