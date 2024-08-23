@@ -12,9 +12,11 @@
 #include <logic.h>
 #include "config.h"
 #include <hModbusLib.h>
+#include <hDpsModuleLib.h>
 
 /* VARIABLES */
 hModbusTypeDef hModbusMaster1Handle;
+hDpsModuleTypeDef DpsModule;
 
 /* FUNCTIONS */
 
@@ -39,96 +41,128 @@ void MainLogicInit(void){
 	// Modbus functions for init
 	hModbusMaster1UartInit();
 	hModbusInit(&hModbusMaster1Handle, USART1, LL_GPIO_PIN_12, GPIOA, 2500, 100);
-
+	hDpsModuleInit(&DpsModule, &hModbusMaster1Handle, 1);
 }
 
 void MainLogicLoop(void){
 	uint16_t delay = 1;
+	static uint16_t AccVoltage;
+	static uint16_t AccCurrent;
+	static uint16_t AccData[2] = {0};
+	uint16_t SetVoltage = 3300;
+	uint16_t SetCurrent = 100;
 
-	/* Input read test */
-	uint8_t static RxInput = 7;
-
-	hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
-	LL_mDelay(delay);
-
-	/* Input register read test */
-	uint16_t static RxInputReg = 7;
-
-	hModbusReadInputRegister16i(&hModbusMaster1Handle, 1, 5, &RxInputReg);
+	hDpsModuleDisableOutput(&DpsModule);
 	LL_mDelay(delay);
 
-	/* Coil register read write test */
-	uint8_t static RxCoil = 0;
-
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 5, 0);
-	LL_mDelay(delay);
-	hModbusReadCoil(&hModbusMaster1Handle, 1, 5, &RxCoil); //ok
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 5, 1);
-	LL_mDelay(delay);
-	hModbusReadCoil(&hModbusMaster1Handle, 1, 5, &RxCoil); //ok
+	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
 	LL_mDelay(delay);
 
-
-	/* Coil registers read write test */
-	uint8_t TxCoilZero[5] = {0};
-	uint8_t TxCoil[5] = {1, 0, 0, 1, 1};
-	uint8_t static RxCoils;
-
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 10, TxCoilZero[0]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 11, TxCoilZero[1]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 12, TxCoilZero[2]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 13, TxCoilZero[3]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 14, TxCoilZero[4]);
+	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
 	LL_mDelay(delay);
 
-	hModbusReadCoils(&hModbusMaster1Handle, 1, 10, 5, &RxCoils);
+	hDpsModuleSetCurrent(&DpsModule, SetCurrent);
 	LL_mDelay(delay);
 
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 10, TxCoil[0]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 11, TxCoil[1]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 12, TxCoil[2]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 13, TxCoil[3]);
-	LL_mDelay(delay);
-	hModbusWriteCoil(&hModbusMaster1Handle, 1, 14, TxCoil[4]);
+	hDpsmoduleSetVoltage(&DpsModule, SetVoltage);
 	LL_mDelay(delay);
 
-	hModbusReadCoils(&hModbusMaster1Handle, 1, 10, 5, &RxCoils); //ok - but the rx data length is to small. 
+	hDpsModuleEnableOutput(&DpsModule);
 	LL_mDelay(delay);
 
-	/* Holding 16i register read write test */
-	uint16_t static RxHolding16iData = 0;
-
-	hModbusWriteHoldingRegister16i(&hModbusMaster1Handle, 1, 9, 0);			
-	LL_mDelay(delay);
-	hModbusReadHoldingRegister16i(&hModbusMaster1Handle, 1, 9, &RxHolding16iData);
-	LL_mDelay(delay);
-	hModbusWriteHoldingRegister16i(&hModbusMaster1Handle, 1, 9, 5678);
-	LL_mDelay(delay);
-	hModbusReadHoldingRegister16i(&hModbusMaster1Handle, 1, 9, &RxHolding16iData);  
+	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
 	LL_mDelay(delay);
 
+	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
+	LL_mDelay(delay);
 
-	/* Holding registers read write test */
-	uint16_t static TxHolding16iDataZero[5] = {0};
-	uint16_t static TxHolding16iData[5] = {21, 37, 7, 2137, 458};
-	uint16_t static RxHolding16iDataArr[5] = {0};
+	hDpsModuleDisableOutput(&DpsModule);
+	LL_mDelay(delay);
 
-	hModbusWriteHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, TxHolding16iDataZero);
-	LL_mDelay(delay);
-	hModbusReadHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, RxHolding16iDataArr);
-	LL_mDelay(delay);
-	hModbusWriteHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, TxHolding16iData);
-	LL_mDelay(delay);
-	hModbusReadHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, RxHolding16iDataArr); 
-	LL_mDelay(delay);
+	// /* Input read test */
+	// uint8_t static RxInput = 7;
+
+	// hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
+	// LL_mDelay(delay);
+
+	// /* Input register read test */
+	// uint16_t static RxInputReg = 7;
+
+	// hModbusReadInputRegister16i(&hModbusMaster1Handle, 1, 5, &RxInputReg);
+	// LL_mDelay(delay);
+
+	// /* Coil register read write test */
+	// uint8_t static RxCoil = 0;
+
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 5, 0);
+	// LL_mDelay(delay);
+	// hModbusReadCoil(&hModbusMaster1Handle, 1, 5, &RxCoil); //ok
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 5, 1);
+	// LL_mDelay(delay);
+	// hModbusReadCoil(&hModbusMaster1Handle, 1, 5, &RxCoil); //ok
+	// LL_mDelay(delay);
+
+
+	// /* Coil registers read write test */
+	// uint8_t TxCoilZero[5] = {0};
+	// uint8_t TxCoil[5] = {1, 0, 0, 1, 1};
+	// uint8_t static RxCoils;
+
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 10, TxCoilZero[0]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 11, TxCoilZero[1]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 12, TxCoilZero[2]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 13, TxCoilZero[3]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 14, TxCoilZero[4]);
+	// LL_mDelay(delay);
+
+	// hModbusReadCoils(&hModbusMaster1Handle, 1, 10, 5, &RxCoils);
+	// LL_mDelay(delay);
+
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 10, TxCoil[0]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 11, TxCoil[1]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 12, TxCoil[2]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 13, TxCoil[3]);
+	// LL_mDelay(delay);
+	// hModbusWriteCoil(&hModbusMaster1Handle, 1, 14, TxCoil[4]);
+	// LL_mDelay(delay);
+
+	// hModbusReadCoils(&hModbusMaster1Handle, 1, 10, 5, &RxCoils); //ok - but the rx data length is to small. 
+	// LL_mDelay(delay);
+
+	// /* Holding 16i register read write test */
+	// uint16_t static RxHolding16iData = 0;
+
+	// hModbusWriteHoldingRegister16i(&hModbusMaster1Handle, 1, 9, 0);			
+	// LL_mDelay(delay);
+	// hModbusReadHoldingRegister16i(&hModbusMaster1Handle, 1, 9, &RxHolding16iData);
+	// LL_mDelay(delay);
+	// hModbusWriteHoldingRegister16i(&hModbusMaster1Handle, 1, 9, 5678);
+	// LL_mDelay(delay);
+	// hModbusReadHoldingRegister16i(&hModbusMaster1Handle, 1, 9, &RxHolding16iData);  
+	// LL_mDelay(delay);
+
+
+	// /* Holding registers read write test */
+	// uint16_t static TxHolding16iDataZero[5] = {0};
+	// uint16_t static TxHolding16iData[5] = {21, 37, 7, 2137, 458};
+	// uint16_t static RxHolding16iDataArr[5] = {0};
+
+	// hModbusWriteHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, TxHolding16iDataZero);
+	// LL_mDelay(delay);
+	// hModbusReadHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, RxHolding16iDataArr);
+	// LL_mDelay(delay);
+	// hModbusWriteHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, TxHolding16iData);
+	// LL_mDelay(delay);
+	// hModbusReadHoldingRegisters16i(&hModbusMaster1Handle, 1, 9, 5, RxHolding16iDataArr); 
+	// LL_mDelay(delay);
 
 }
 

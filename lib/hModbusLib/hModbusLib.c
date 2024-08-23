@@ -161,15 +161,6 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
     break;
   }
   return Frame;
-
-  // hModbusFrameTypeDef Frame = {0};
-  // Frame.SlaveAddr = Handle->rxBuf[0];
-  // Frame.Cmd = Handle->rxBuf[1];
-  // Frame.DataLength = Handle->rxBuf[2];
-  // memcpy(Frame.Data, &Handle->rxBuf[3], Frame.DataLength);
-  // Frame.Crc = (Handle->rxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-  // Frame.Crc = (Handle->rxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-  // return Frame;
 }
 
 
