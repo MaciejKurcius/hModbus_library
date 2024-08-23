@@ -77,11 +77,18 @@ extern void hModbusUsartInit(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartRxneFlag(hModbusTypeDef* Handle);
 extern void hModbusEnableRxneIt(hModbusTypeDef* Handle);
 
+
+// void hModbusSwapU16Data(uint16_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
+// void hModbusSwapU32Data(uint32_t* Data, uint8_t DataLength, hModbus32BitOrderTypeDef BitOrder);
+void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
+// void hModbusSwapU32DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
 hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
 void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame);
-hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle, uint8_t DataLength);
+// hModbusFrameTypeDef hModbusParseFrameRaw(hModbusTypeDef* Handle, uint16_t DataLength);
+hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle);
 bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
+bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 void hModbusRxCallback(hModbusTypeDef* Handle);
 uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle);
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *data, uint16_t size);
@@ -106,7 +113,7 @@ bool hModbusReadHoldingRegisters32f(hModbusTypeDef* Handle, uint8_t SlaveAddress
 bool hModbusReadHoldingRegister32f(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, float *Data);
 bool hModbusReadHoldingRegisters32i(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t StartNumber, uint16_t Length, uint32_t *Data);
 bool hModbusReadHoldingRegister32i(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint32_t *Data);
-bool hModbusWriteCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint8_t Data);
+bool hModbusWriteCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint16_t Data);
 bool hModbusWriteHoldingRegister16i(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint16_t Data);
 bool hModbusWriteHoldingRegisters16i(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t StartNumber, uint16_t Length, uint16_t *Data);
 
