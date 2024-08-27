@@ -14,7 +14,7 @@ bool hDpsModuleDisableOutput(hDpsModuleTypeDef* Handle){
 }
 
 bool hDpsmoduleSetVoltage(hDpsModuleTypeDef* Handle, uint16_t Voltage){
-    return hModbusWriteHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 0, Voltage);
+    return hModbusWriteHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 0, Voltage/10);
 }
 
 bool hDpsModuleSetCurrent(hDpsModuleTypeDef* Handle, uint16_t Current){
@@ -22,18 +22,30 @@ bool hDpsModuleSetCurrent(hDpsModuleTypeDef* Handle, uint16_t Current){
 }
 
 bool hDpsModuleSetVoltageCurrent(hDpsModuleTypeDef* Handle, uint16_t Voltage, uint16_t Current){
-    uint16_t TxData[] = {Voltage, Current};
+    uint16_t TxData[] = {Voltage/10, Current};
     return hModbusWriteHoldingRegisters16i(Handle->ModbusHandle, Handle->Address, 0, 2, TxData);
 }
 
 uint16_t hDpsModuleGetAccVoltage(hDpsModuleTypeDef* Handle){
     uint16_t RxData;
     hModbusReadHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 2, &RxData);
-    return RxData;
+    return RxData * 10;
 }
 
 uint16_t hDpsModuleGetAccCurrent(hDpsModuleTypeDef* Handle){
     uint16_t RxData;
     hModbusReadHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 3, &RxData);
+    return RxData;
+}
+
+uint16_t hDpsModuleGetVoltageSetpoint(hDpsModuleTypeDef* Handle){
+    uint16_t RxData;
+    hModbusReadHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 0, &RxData);
+    return RxData;
+}
+
+uint16_t hDpsModuleGetCurrentSetpoint(hDpsModuleTypeDef* Handle){
+    uint16_t RxData;
+    hModbusReadHoldingRegister16i(Handle->ModbusHandle, Handle->Address, 1, &RxData);
     return RxData;
 }

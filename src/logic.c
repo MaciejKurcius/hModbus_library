@@ -46,37 +46,37 @@ void MainLogicInit(void){
 
 void MainLogicLoop(void){
 	uint16_t delay = 1;
-	static uint16_t AccVoltage;
-	static uint16_t AccCurrent;
+	static volatile uint16_t AccVoltage;
+	static volatile uint16_t AccCurrent;
 	static uint16_t AccData[2] = {0};
-	uint16_t SetVoltage = 3300;
-	uint16_t SetCurrent = 100;
+	uint16_t SetVoltage = 3400;
+	uint16_t SetCurrent = 2100;
 
-	hDpsModuleDisableOutput(&DpsModule);
+	hDpsModuleDisableOutput(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
+	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
+	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	hDpsModuleSetCurrent(&DpsModule, SetCurrent);
+	hDpsModuleSetCurrent(&DpsModule, SetCurrent); // wokrking ok
 	LL_mDelay(delay);
 
-	hDpsmoduleSetVoltage(&DpsModule, SetVoltage);
+	hDpsmoduleSetVoltage(&DpsModule, SetVoltage); // wokrking ok
 	LL_mDelay(delay);
 
-	hDpsModuleEnableOutput(&DpsModule);
+	hDpsModuleEnableOutput(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
+	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
+	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
-	hDpsModuleDisableOutput(&DpsModule);
+	hDpsModuleDisableOutput(&DpsModule); // wokrking ok
 	LL_mDelay(delay);
 
 	// /* Input read test */

@@ -17,5 +17,7 @@ bool hDpsModuleSetCurrent(hDpsModuleTypeDef* Handle, uint16_t Current);
 bool hDpsModuleSetVoltageCurrent(hDpsModuleTypeDef* Handle, uint16_t Voltage, uint16_t Current);
 uint16_t hDpsModuleGetAccVoltage(hDpsModuleTypeDef* Handle);
 uint16_t hDpsModuleGetAccCurrent(hDpsModuleTypeDef* Handle);
+uint16_t hDpsModuleGetVoltageSetpoint(hDpsModuleTypeDef* Handle);
+uint16_t hDpsModuleGetCurrentSetpoint(hDpsModuleTypeDef* Handle);
 
 #endif
