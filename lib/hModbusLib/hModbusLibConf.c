@@ -67,7 +67,7 @@ void hModbusClearUartTcFlag(hModbusTypeDef* Handle){
     LL_USART_ClearFlag_TC(Handle->UartHandle);
 }
 
-// Write all actions to execute when hModbus struct is init
+// Write all common for all instances actions to execute when hModbus struct is init
 void hModbusUsartInit(hModbusTypeDef* Handle){
 	;
 }

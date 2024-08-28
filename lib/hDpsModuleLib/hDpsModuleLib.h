@@ -9,7 +9,7 @@ typedef struct{
 }hDpsModuleTypeDef;
 
 
-void hDpsModuleInit(hDpsModuleTypeDef* Handle, hModbusTypeDef* ModbusHandle, uint8_t SlaveAddr);
+void hDpsModuleInit(hDpsModuleTypeDef* Handle, hModbusTypeDef* ModbusHandle, uint8_t DeviceAddr);
 bool hDpsModuleEnableOutput(hDpsModuleTypeDef* Handle);
 bool hDpsModuleDisableOutput(hDpsModuleTypeDef* Handle);
 bool hDpsmoduleSetVoltage(hDpsModuleTypeDef* Handle, uint16_t Voltage);

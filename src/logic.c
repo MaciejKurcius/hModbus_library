@@ -16,7 +16,9 @@
 
 /* VARIABLES */
 hModbusTypeDef hModbusMaster1Handle;
+hModbusTypeDef hModbusSlave1Handle;
 hDpsModuleTypeDef DpsModule;
+hModbusSlaveDataTypeDef Slave1Data;
 
 /* FUNCTIONS */
 
@@ -40,50 +42,19 @@ void MainLogicInit(void){
 
 	// Modbus functions for init
 	hModbusMaster1UartInit();
-	hModbusInit(&hModbusMaster1Handle, USART1, LL_GPIO_PIN_12, GPIOA, 2500, 100);
-	hDpsModuleInit(&DpsModule, &hModbusMaster1Handle, 1);
+	// hModbusInit(&hModbusMaster1Handle, USART1, hModbusMaster);
+	hModbusInit(&hModbusSlave1Handle, USART1, hModbusSlave);
+	hModbusInitSlaveData(&hModbusSlave1Handle, &Slave1Data);
 }
 
 void MainLogicLoop(void){
 	uint16_t delay = 1;
-	static uint16_t AccVoltage;
-	static uint16_t AccCurrent;
-	static uint16_t AccData[2] = {0};
-	uint16_t SetVoltage = 3300;
-	uint16_t SetCurrent = 100;
 
-	hDpsModuleDisableOutput(&DpsModule);
+	/* Input read test */
+	uint8_t static RxInput = 7;
+
+	hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
 	LL_mDelay(delay);
-
-	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
-	LL_mDelay(delay);
-
-	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
-	LL_mDelay(delay);
-
-	hDpsModuleSetCurrent(&DpsModule, SetCurrent);
-	LL_mDelay(delay);
-
-	hDpsmoduleSetVoltage(&DpsModule, SetVoltage);
-	LL_mDelay(delay);
-
-	hDpsModuleEnableOutput(&DpsModule);
-	LL_mDelay(delay);
-
-	AccCurrent = hDpsModuleGetAccCurrent(&DpsModule);
-	LL_mDelay(delay);
-
-	AccVoltage = hDpsModuleGetAccVoltage(&DpsModule);
-	LL_mDelay(delay);
-
-	hDpsModuleDisableOutput(&DpsModule);
-	LL_mDelay(delay);
-
-	// /* Input read test */
-	// uint8_t static RxInput = 7;
-
-	// hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
-	// LL_mDelay(delay);
 
 	// /* Input register read test */
 	// uint16_t static RxInputReg = 7;

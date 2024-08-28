@@ -1,8 +1,8 @@
 #include "hDpsModuleLib.h"
 
-void hDpsModuleInit(hDpsModuleTypeDef* Handle, hModbusTypeDef* ModbusHandle, uint8_t SlaveAddr){
+void hDpsModuleInit(hDpsModuleTypeDef* Handle, hModbusTypeDef* ModbusHandle, uint8_t DeviceAddr){
     Handle->ModbusHandle = ModbusHandle;
-    Handle->Address = SlaveAddr;
+    Handle->Address = DeviceAddr;
 }
 
 bool hDpsModuleEnableOutput(hDpsModuleTypeDef* Handle){

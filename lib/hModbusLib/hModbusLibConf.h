@@ -14,6 +14,16 @@
 #define UART_HANDLE_TYPE USART_TypeDef*     // Write your UART type def struct ptr from your framework
 #define GPIO_TYPE_DEF GPIO_TypeDef*         // Write your GPIO port type def struct ptr from your framework
 
+#define HMODBUS_DEFAULT_RX_TIMEOUT  2500
+#define HMODBUS_DEFAULT_TX_TIMEOUT  100
+
+
+// Valueas are common for each instances
+#define HMODBUS_SLAVE_COIL_REG_SIZE 100
+#define HMODBUS_SLAVE_DIGITAL_INPUTS_REG_SIZE 100
+#define HMODBUS_SLAVE_HOLDING_REG_SIZE 30
+#define HMODBUS_SLAVE_INPUT_REG_SIZE 30
+
 void hModbusMaster1UartInit(void);
 
 #endif
