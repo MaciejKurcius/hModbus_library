@@ -312,23 +312,48 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
     TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxRegLength+1);
   }
 
-  // else if(RxFrame.Cmd == hModbusCmd_WriteSingleCoil){
-  //   uint16_t TxDataLen = RxFrame.Data[5] + (RxFrame.Data[4] << 8);
-  //   uint8_t TxData[TxDataLen];
-  //   TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxDataLen);
-  // }
-  // else if(RxFrame.Cmd == hModbusCmd_WriteMultipleCoils){
-  //   uint16_t TxDataLen = RxFrame.Data[5] + (RxFrame.Data[4] << 8);
-  //   uint8_t TxData[TxDataLen];
-  //   TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxDataLen);
-  // }
-  // else if(RxFrame.Cmd == hModbusCmd_WriteMultipleRegisters){
-  //   uint16_t TxDataLen = RxFrame.Data[5] + (RxFrame.Data[4] << 8);
-  //   uint8_t TxData[TxDataLen];
-  //   TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxDataLen);
-  // }
-  // else
-  //   return false;
+  else if(RxFrame.Cmd == hModbusCmd_WriteSingleCoil){
+    uint16_t CoilRegData = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
+    uint16_t CoilRegIndex = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
+    if(CoilRegIndex > HMODBUS_SLAVE_COIL_REG_SIZE)  
+      return false;
+    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], RxFrame.Data[5], 2);
+    TxFrame = RxFrame;
+  }
+
+  else if(RxFrame.Cmd == hModbusCmd_WriteSingleRegister){
+    uint16_t HoldingRegData = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
+    uint16_t HoldingRegIndex = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
+    if(HoldingRegIndex > HMODBUS_SLAVE_HOLDING_REG_SIZE)  
+      return false;
+    Handle->Data->HoldingReg[HoldingRegIndex] = HoldingRegData;
+    TxFrame = RxFrame;
+  }
+
+  else if(RxFrame.Cmd == hModbusCmd_WriteMultipleCoils){
+    uint16_t CoilRegSize = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
+    uint16_t CoilRegIndex = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
+    uint8_t BytesSize = RxFrame.Data[7];
+    if(CoilRegIndex + BytesSize > HMODBUS_SLAVE_COIL_REG_SIZE)  
+      return false;
+    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], RxFrame.Data[8], BytesSize);
+    uint16_t TxData[] = {CoilRegIndex, CoilRegSize};
+    TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
+  }
+
+  else if(RxFrame.Cmd == hModbusCmd_WriteMultipleRegisters){
+    uint16_t HoldingRegSize = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
+    uint16_t HoldingRegIndex = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
+    uint8_t BytesSize = RxFrame.Data[7];
+    if(HoldingRegIndex + BytesSize > HMODBUS_SLAVE_HOLDING_REG_SIZE)  
+      return false;
+    memcpy(&Handle->Data->HoldingReg[HoldingRegIndex], RxFrame.Data[8], BytesSize);
+    uint16_t TxData[] = {HoldingRegIndex, HoldingRegSize};
+    TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
+  }
+
+  else
+    return false;
 
   hModbusSendFrame(Handle, TxFrame);
   return true;
