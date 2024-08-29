@@ -67,11 +67,15 @@ void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16Bit
 }
 
 uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder){
+  uint16_t RetData = 0;
+
   if(BitOrder == hModbus16BitOrder_AB)
-    return (Data[0] | (Data[1] << 8));
+    RetData = (uint16_t) Data[1] + ((Data[0] & 0x00FF) << 8 ); 
+
   if(BitOrder == hModbus16BitOrder_BA)
-    return (Data[1] | (Data[0] << 8));
-  return 0;
+    RetData = (uint16_t) Data[0] + ((Data[1] & 0x00FF) << 8 ); 
+
+  return RetData;
 }
 
 
@@ -100,7 +104,7 @@ void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame){
   TxData[0] = Frame.DeviceAddr;
   TxData[1] = Frame.Cmd;
   memcpy(&TxData[2], Frame.Data, Frame.DataLength);
-  uint16_t Crc = hModbusCrc16(TxData, Frame.DataLength+2);
+  volatile uint16_t Crc = hModbusCrc16(TxData, Frame.DataLength+2);
   TxData[1+1+Frame.DataLength+0] = (Crc & 0x00FF);
   TxData[1+1+Frame.DataLength+1] = (Crc & 0xFF00) >> 8;
   hModbusSendRawData(Handle, TxData, HMODBUS_FRAME_LEN(Frame.DataLength));
@@ -176,6 +180,10 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
 
   if(Handle->Type == hModbusSlave){
     Frame.DeviceAddr = Handle->RxBuf[0];
+
+    if(Frame.DeviceAddr != Handle->SelfAddr)
+      return Frame;
+    
     Frame.Cmd = Handle->RxBuf[1];
 
     switch(Frame.Cmd){
@@ -193,10 +201,9 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
         break;
       case hModbusCmd_ReadHoldingRegisters: //ok
         Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
         Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+        Frame.Crc += (Handle->RxBuf[1+1+Frame.DataLength+1] & 0x00FF) << 8;
         break;
       case hModbusCmd_ReadInputRegisters: //ok
         Frame.DataLength = 4;
@@ -292,8 +299,8 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   }
 
   else if(RxFrame.Cmd == hModbusCmd_ReadHoldingRegisters){
-    uint16_t TxRegLength = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
-    uint16_t TxRegStart = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
+    uint16_t TxRegLength = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB) * 2;
+    uint16_t TxRegStart = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
     uint8_t TxData[TxRegLength+1];
     if(TxRegLength > HMODBUS_SLAVE_HOLDING_REG_SIZE)  
       return false;
@@ -361,14 +368,14 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
 }
 
 void hModbusSlaveLoopHandler(hModbusTypeDef* Handle){
-  if(Handle->RxDataReady == hModbusDataReady){
+  if(Handle->RxBusy == 1){
     if(hModbusReveiceRawData(Handle) != 0){
       hModbusFrameTypeDef RxFrame;
       RxFrame = hModbusParseFrame(Handle);
       hModbusRxFrameExecute(Handle, RxFrame);
-      Handle->RxDataReady = hModbusDataNotReady;
-      Handle->RxIndex = 0;
     }
+    Handle->RxBusy = 0;
+    Handle->RxIndex = 0;
   }
 }
 
@@ -380,9 +387,7 @@ void hModbusRxCallback(hModbusTypeDef* Handle){
   if(hModbusGetUartRxneFlag(Handle)){
       if(Handle->RxIndex < HMODBUS_RXTX_SIZE - 1){
           Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);     
-          //
-          Handle->RxDataReady = hModbusDataReady; 
-          //
+          Handle->RxBusy = 1;
           Handle->RxIndex++;
       }
       else{
@@ -402,6 +407,10 @@ uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle){
       return 0;
     
     if(Handle->RxIndex > 0){
+      if(HMODBUS_SLAVE_CHECK_RAW_ADDR){
+        if(Handle->RxBuf[0] != Handle->SelfAddr && Handle->Type == hModbusSlave)
+          return 0;
+      }
       if(hModbusGetUartIdleFlag(Handle))
         return Handle->RxIndex; 
     }
@@ -464,8 +473,8 @@ bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeD
   Handle->Type = Type;
   Handle->CtrlOut.Pin = 0;
   Handle->CtrlOut.Port = NULL;
-  Handle->SelfId = SelfId;
-  Handle->RxDataReady = hModbusDataNotReady;
+  Handle->SelfAddr = SelfId;
+  Handle->RxBusy = 0;
   hModbusUsartInit(Handle);
   hModbusEnableRxneIt(Handle);
   Handle->RxTimeout = HMODBUS_DEFAULT_RX_TIMEOUT;

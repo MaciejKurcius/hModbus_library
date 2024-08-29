@@ -24,6 +24,8 @@
 #define HMODBUS_SLAVE_HOLDING_REG_SIZE 30
 #define HMODBUS_SLAVE_INPUT_REG_SIZE 30
 
+#define HMODBUS_SLAVE_CHECK_RAW_ADDR 0  // if 1 - slave address is check in raw data function. 
+
 void hModbusMaster1UartInit(void);
 
 #endif

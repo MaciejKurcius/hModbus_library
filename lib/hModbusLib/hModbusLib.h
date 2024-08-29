@@ -7,11 +7,6 @@
 
 #define HMODBUS_FRAME_LEN(arg) (1+1+(arg)+2)
 
-typedef enum{
-  hModbusDataNotReady = 0,
-  hModbusDataReady    = 1
-}hModbusDataReadyFlagTypeDef;
-
 typedef enum
 {
   hModbusCmd_ReadCoilStatus = 1,
@@ -68,20 +63,22 @@ typedef struct{
 
 typedef struct{
     UART_HANDLE_TYPE            UartHandle;
-    uint8_t                     SelfId;
     hModbusTypeTypeDef          Type;
+    // Only for slave
+    uint8_t                     SelfAddr;
     hModbusSlaveDataTypeDef*    Data;
     // RX
+    uint8_t                     RxBusy;
+    uint32_t                    RxTimeout; 
     uint16_t                    RxIndex;  
     uint8_t                     RxBuf[HMODBUS_RXTX_SIZE];
     uint32_t                    RxTime;
-    uint32_t                    RxTimeout; 
-    hModbusDataReadyFlagTypeDef RxDataReady;
     // TX
     uint8_t                     TxBusy;
     uint32_t                    TxTimeout;
     hModbus16BitOrderTypeDef    ByteOrder16;
     hModbus32BitOrderTypeDef    ByteOrder32;
+    // Only for master
     hModbusCtrlOutTypeDef       CtrlOut;
 }hModbusTypeDef;
 
