@@ -45,6 +45,7 @@ void MainLogicInit(void){
 	// hModbusInit(&hModbusMaster1Handle, USART1, hModbusMaster);
 	hModbusInit(&hModbusSlave1Handle, USART1, hModbusSlave, 1);
 	hModbusInitSlaveData(&hModbusSlave1Handle, &Slave1Data);
+	Slave1Data.HoldingReg[9] = 2137;
 }
 
 void MainLogicLoop(void){

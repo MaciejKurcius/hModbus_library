@@ -298,7 +298,7 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
     TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxRegLength+1);
   }
 
-  else if(RxFrame.Cmd == hModbusCmd_ReadHoldingRegisters){
+  else if(RxFrame.Cmd == hModbusCmd_ReadHoldingRegisters){ // working ok
     uint16_t TxRegLength = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB) * 2;
     uint16_t TxRegStart = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
     uint8_t TxData[TxRegLength+1];
@@ -306,6 +306,7 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
       return false;
     TxData[0] = TxRegLength;
     memcpy(&TxData[1], &Handle->Data->HoldingReg[TxRegStart], TxRegLength);
+    hModbusSwapU16DataByteArray(&TxData[1], TxRegLength, hModbus16BitOrder_BA);
     TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxRegLength+1);
   }
 
