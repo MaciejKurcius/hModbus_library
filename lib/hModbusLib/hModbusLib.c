@@ -1,4 +1,5 @@
 #include "hModbusLib.h"
+#include <usart.h>
 
 
 static const uint16_t hModbusCrc[] =
@@ -173,7 +174,7 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
     }
   }
 
-  if(Handle->Type == hModbusMaster){
+  if(Handle->Type == hModbusSlave){
     Frame.DeviceAddr = Handle->RxBuf[0];
     Frame.Cmd = Handle->RxBuf[1];
 
@@ -313,11 +314,11 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   }
 
   else if(RxFrame.Cmd == hModbusCmd_WriteSingleCoil){
-    uint16_t CoilRegData = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
+    // uint16_t CoilRegData = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
     uint16_t CoilRegIndex = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
     if(CoilRegIndex > HMODBUS_SLAVE_COIL_REG_SIZE)  
       return false;
-    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], RxFrame.Data[5], 2);
+    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], &RxFrame.Data[5], 2);
     TxFrame = RxFrame;
   }
 
@@ -336,7 +337,7 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
     uint8_t BytesSize = RxFrame.Data[7];
     if(CoilRegIndex + BytesSize > HMODBUS_SLAVE_COIL_REG_SIZE)  
       return false;
-    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], RxFrame.Data[8], BytesSize);
+    memcpy(&Handle->Data->CoilsReg[CoilRegIndex], &RxFrame.Data[8], BytesSize);
     uint16_t TxData[] = {CoilRegIndex, CoilRegSize};
     TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
   }
@@ -347,7 +348,7 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
     uint8_t BytesSize = RxFrame.Data[7];
     if(HoldingRegIndex + BytesSize > HMODBUS_SLAVE_HOLDING_REG_SIZE)  
       return false;
-    memcpy(&Handle->Data->HoldingReg[HoldingRegIndex], RxFrame.Data[8], BytesSize);
+    memcpy(&Handle->Data->HoldingReg[HoldingRegIndex], &RxFrame.Data[8], BytesSize);
     uint16_t TxData[] = {HoldingRegIndex, HoldingRegSize};
     TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
   }
@@ -360,35 +361,44 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
 }
 
 void hModbusRxCallback(hModbusTypeDef* Handle){
-  if(Handle->Type == hModbusMaster){
-    if(hModbusGetUartRxneFlag(Handle)){
-        if(Handle->RxIndex < HMODBUS_RXTX_SIZE - 1){
-            Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);      
-            Handle->RxIndex++;
-        }
-        else{
-            hModbusUsartRx8(Handle);
-        } 
-        Handle->RxTime = hModbusGetSystemClock();
-    }
-  }
   if(Handle->Type == hModbusSlave){
-    hModbusReveiceRawData(Handle);
-    if(hModbusGetUartRxneFlag(Handle)){
-        if(Handle->RxIndex < HMODBUS_RXTX_SIZE - 1){
-            Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);      
-            Handle->RxIndex++;
-        }
-        else{
-            hModbusUsartRx8(Handle);
-        } 
-        Handle->RxTime = hModbusGetSystemClock();
+    if(Handle->RxIndex == 0){
+      hModbusClearUartIdleFlag(Handle);
+      hModbusEnableIdleIt(Handle);
     }
   }
+
+  // Common for master and slave
+  if(hModbusGetUartRxneFlag(Handle)){
+      if(Handle->RxIndex < HMODBUS_RXTX_SIZE - 1){
+          Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);      
+          Handle->RxIndex++;
+      }
+      else{
+          hModbusUsartRx8(Handle);
+      } 
+      Handle->RxTime = hModbusGetSystemClock();
+  }
+
+  if(Handle->Type == hModbusSlave){
+    if(Handle->RxIndex > 0){
+      if(hModbusGetUartIdleFlag(Handle)){
+        Handle->RxIndex = 0;
+        Handle->RxDataReady = hModbusDataReady;
+        hModbusClearUartIdleFlag(Handle);
+        hModbusDisableIdleIt(Handle);
+      }
+    }
+  }
+
 }
+
 
 uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle){
   uint32_t startTime = hModbusGetSystemClock();
+
+
+  // Master
   if(Handle->Type == hModbusMaster){
     while(1){
       hModbusDelay(1);  
@@ -404,26 +414,31 @@ uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle){
       }
     }
   }
-  if(Handle->Type == hModbusSlave){
-    while(1){
-      hModbusDelay(1);  
-      if(hModbusGetSystemClock() - startTime > Handle->RxTimeout)
-        return 0;
+
+  // // Slave
+  // if(Handle->Type == hModbusSlave){
+  //   while(1){
+  //     hModbusDelay(1);  
+  //     if(hModbusGetSystemClock() - startTime > Handle->RxTimeout){
+  //       // Handle->RxIndex = 0;
+  //       return 0;
+  //     }
       
-      if(Handle->RxIndex > 0){
-        if(hModbusGetUartIdleFlag(Handle)){
-          hModbusFrameTypeDef RxFrame;
-          RxFrame = hModbusParseFrame(Handle);
-          hModbusRxFrameExecute(Handle, RxFrame);
-          return Handle->RxIndex; 
-          }
-      }
-      else{
-        hModbusClearUartIdleFlag(Handle);
-      }
-    }
-  }
-  return 0;
+  //     if(Handle->RxIndex > 0){
+  //       if(hModbusGetUartIdleFlag(Handle)){
+  //         hModbusFrameTypeDef RxFrame;
+  //         RxFrame = hModbusParseFrame(Handle);
+  //         hModbusRxFrameExecute(Handle, RxFrame);
+  //         // Handle->RxIndex = 0;
+  //         return 0;
+  //         }
+  //     }
+  //     else{
+  //       hModbusClearUartIdleFlag(Handle);
+  //     }
+  //   }
+  // }
+  // return 0;
 }  
 
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
@@ -470,7 +485,7 @@ bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
   return true;
 }
 
-bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeDef Type){
+bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeDef Type, uint8_t SelfId){
   memset(Handle, 0, sizeof(*Handle));
   Handle->ByteOrder16 = hModbus16BitOrder_AB;
   Handle->ByteOrder32 = hModbus32BitOrder_ABCD;
@@ -478,6 +493,8 @@ bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeD
   Handle->Type = Type;
   Handle->CtrlOut.Pin = 0;
   Handle->CtrlOut.Port = NULL;
+  Handle->SelfId = SelfId;
+  Handle->RxDataReady = hModbusDataNotReady;
   hModbusUsartInit(Handle);
   hModbusEnableRxneIt(Handle);
   Handle->RxTimeout = HMODBUS_DEFAULT_RX_TIMEOUT;

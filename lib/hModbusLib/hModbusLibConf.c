@@ -52,6 +52,16 @@ void hModbusClearUartIdleFlag(hModbusTypeDef* Handle){
     LL_USART_ClearFlag_IDLE(Handle->UartHandle);
 }
 
+// Write function from your framework to enable UART IDLE interrupt
+void hModbusEnableIdleIt(hModbusTypeDef* Handle){
+    LL_USART_EnableIT_IDLE(Handle->UartHandle);
+}
+
+// Write function from your framework to disable UART IDLE interrupt
+void hModbusDisableIdleIt(hModbusTypeDef* Handle){
+    LL_USART_DisableIT_IDLE(Handle->UartHandle);
+}
+
 // Write function from your framework which return UART TXE flag
 uint32_t hModbusGetUartTxeFlag(hModbusTypeDef* Handle){
     return LL_USART_IsActiveFlag_TXE(Handle->UartHandle);
@@ -110,7 +120,7 @@ void hModbusMaster1UartInit(void){
 	GPIO_InitStruct.Alternate = LL_GPIO_AF_0;
 	LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	NVIC_SetPriority(USART1_IRQn, 0);
+	NVIC_SetPriority(USART1_IRQn, 5);
 	NVIC_EnableIRQ(USART1_IRQn);
 
 	USART_InitStruct.BaudRate = 9600;

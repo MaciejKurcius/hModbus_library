@@ -43,18 +43,24 @@ void MainLogicInit(void){
 	// Modbus functions for init
 	hModbusMaster1UartInit();
 	// hModbusInit(&hModbusMaster1Handle, USART1, hModbusMaster);
-	hModbusInit(&hModbusSlave1Handle, USART1, hModbusSlave);
+	hModbusInit(&hModbusSlave1Handle, USART1, hModbusSlave, 1);
 	hModbusInitSlaveData(&hModbusSlave1Handle, &Slave1Data);
 }
 
 void MainLogicLoop(void){
-	uint16_t delay = 1;
+	if(hModbusSlave1Handle.RxDataReady == hModbusDataReady){
+		hModbusFrameTypeDef RxFrame;
+		RxFrame = hModbusParseFrame(&hModbusSlave1Handle);
+		hModbusRxFrameExecute(&hModbusSlave1Handle, RxFrame);
+		hModbusSlave1Handle.RxDataReady = hModbusDataNotReady;
+	}
+	// uint16_t delay = 1;
 
-	/* Input read test */
-	uint8_t static RxInput = 7;
+	// /* Input read test */
+	// uint8_t static RxInput = 7;
 
-	hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
-	LL_mDelay(delay);
+	// hModbusReadDiscreteInput(&hModbusMaster1Handle, 1, 3, &RxInput);
+	// LL_mDelay(delay);
 
 	// /* Input register read test */
 	// uint16_t static RxInputReg = 7;

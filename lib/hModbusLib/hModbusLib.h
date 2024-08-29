@@ -7,6 +7,11 @@
 
 #define HMODBUS_FRAME_LEN(arg) (1+1+(arg)+2)
 
+typedef enum{
+  hModbusDataNotReady = 0,
+  hModbusDataReady    = 1
+}hModbusDataReadyFlagTypeDef;
+
 typedef enum
 {
   hModbusCmd_ReadCoilStatus = 1,
@@ -63,6 +68,7 @@ typedef struct{
 
 typedef struct{
     UART_HANDLE_TYPE            UartHandle;
+    uint8_t                     SelfId;
     hModbusTypeTypeDef          Type;
     hModbusSlaveDataTypeDef*    Data;
     // RX
@@ -70,6 +76,7 @@ typedef struct{
     uint8_t                     RxBuf[HMODBUS_RXTX_SIZE];
     uint32_t                    RxTime;
     uint32_t                    RxTimeout; 
+    hModbusDataReadyFlagTypeDef RxDataReady;
     // TX
     uint8_t                     TxBusy;
     uint32_t                    TxTimeout;
@@ -86,6 +93,8 @@ extern void hModbusUsartTx8(hModbusTypeDef* Handle, uint8_t TxData);
 extern uint8_t hModbusUsartRx8(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartIdleFlag(hModbusTypeDef* Handle);
 extern void hModbusClearUartIdleFlag(hModbusTypeDef* Handle);
+void hModbusDisableIdleIt(hModbusTypeDef* Handle);
+void hModbusEnableIdleIt(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartTxeFlag(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartTcFlag(hModbusTypeDef* Handle);
 extern void hModbusClearUartTcFlag(hModbusTypeDef* Handle);
@@ -111,7 +120,7 @@ void hModbusRxCallback(hModbusTypeDef* Handle);
 uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle);
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *data, uint16_t size);
 // Config functions
-bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeDef Type);
+bool hModbusInit(hModbusTypeDef* Handle, UART_HANDLE_TYPE Uart, hModbusTypeTypeDef Type, uint8_t SelfId);
 void hModbusCtrlOutConfig(hModbusTypeDef* Handle, uint32_t CtrlOutPin, GPIO_TYPE_DEF CtrlOutPort);
 void hModbusSetRxTimeout(hModbusTypeDef* Handle, uint32_t RxTimeout);
 void hModbusSetTxTimeout(hModbusTypeDef* Handle, uint32_t TxTimeout);

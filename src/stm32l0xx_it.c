@@ -25,7 +25,8 @@
 #include "hModbusLib.h"
 #include "logic.h"
 extern volatile uint32_t SysTick_counter;
-extern hModbusTypeDef hModbusMaster1Handle;
+// extern hModbusTypeDef hModbusMaster1Handle;
+extern hModbusTypeDef hModbusSlave1Handle;
 
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
@@ -128,7 +129,8 @@ void EXTI4_15_IRQHandler(void){
  * \return void
  */
 void USART1_IRQHandler(void){
-  hModbusRxCallback(&hModbusMaster1Handle);
+  // hModbusRxCallback(&hModbusMaster1Handle);
+  hModbusRxCallback(&hModbusSlave1Handle);
 }
 
 /****END OF FILE****/

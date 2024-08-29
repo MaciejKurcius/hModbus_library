@@ -23,6 +23,7 @@
 void SysTickInit(void){
 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+  NVIC_SetPriority(SysTick_IRQn, 0);
   SysTick_Config(SystemCoreClock/1000);
 }
 
