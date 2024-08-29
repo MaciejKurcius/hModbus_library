@@ -93,8 +93,6 @@ extern void hModbusUsartTx8(hModbusTypeDef* Handle, uint8_t TxData);
 extern uint8_t hModbusUsartRx8(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartIdleFlag(hModbusTypeDef* Handle);
 extern void hModbusClearUartIdleFlag(hModbusTypeDef* Handle);
-void hModbusDisableIdleIt(hModbusTypeDef* Handle);
-void hModbusEnableIdleIt(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartTxeFlag(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartTcFlag(hModbusTypeDef* Handle);
 extern void hModbusClearUartTcFlag(hModbusTypeDef* Handle);
@@ -114,6 +112,7 @@ hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle);
 bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame);
+void hModbusSlaveLoopHandler(hModbusTypeDef* Handle);
 // Callbacks
 void hModbusRxCallback(hModbusTypeDef* Handle);
 // Raw Data
@@ -127,7 +126,6 @@ void hModbusSetTxTimeout(hModbusTypeDef* Handle, uint32_t TxTimeout);
 void hModbusSet16BitOrder(hModbusTypeDef* Handle, hModbus16BitOrderTypeDef hModbus16bitOrder);
 void hModbusSet32BitOrder(hModbusTypeDef* Handle, hModbus32BitOrderTypeDef hModbus32bitOrder);
 void hModbusInitSlaveData(hModbusTypeDef* Handle, hModbusSlaveDataTypeDef* SlaveData);
-// void hModbusInitSlaveData(uint8_t* CoilsReg, uint16_t CoilsRegSize, uint8_t* DigitalInputsReg, uint16_t DigitalInputsRegSize, uint16_t* HoldingReg, uint16_t HoldingRegSize, uint16_t* InputReg, uint16_t InputRegSize);
 // Modbus functions
 bool hModbusReadCoils(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Startnumber, uint16_t Length, uint8_t *Data);
 bool hModbusReadCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Number, uint8_t *Data);

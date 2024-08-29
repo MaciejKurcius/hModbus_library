@@ -360,18 +360,29 @@ bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   return true;
 }
 
-void hModbusRxCallback(hModbusTypeDef* Handle){
-  if(Handle->Type == hModbusSlave){
-    if(Handle->RxIndex == 0){
-      hModbusClearUartIdleFlag(Handle);
-      hModbusEnableIdleIt(Handle);
+void hModbusSlaveLoopHandler(hModbusTypeDef* Handle){
+  if(Handle->RxDataReady == hModbusDataReady){
+    if(hModbusReveiceRawData(Handle) != 0){
+      hModbusFrameTypeDef RxFrame;
+      RxFrame = hModbusParseFrame(Handle);
+      hModbusRxFrameExecute(Handle, RxFrame);
+      Handle->RxDataReady = hModbusDataNotReady;
+      Handle->RxIndex = 0;
     }
   }
+}
 
-  // Common for master and slave
+void hModbusRxCallback(hModbusTypeDef* Handle){
+  if(Handle->RxIndex == 0)
+      hModbusClearUartIdleFlag(Handle);
+
+
   if(hModbusGetUartRxneFlag(Handle)){
       if(Handle->RxIndex < HMODBUS_RXTX_SIZE - 1){
-          Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);      
+          Handle->RxBuf[Handle->RxIndex] = hModbusUsartRx8(Handle);     
+          //
+          Handle->RxDataReady = hModbusDataReady; 
+          //
           Handle->RxIndex++;
       }
       else{
@@ -379,66 +390,26 @@ void hModbusRxCallback(hModbusTypeDef* Handle){
       } 
       Handle->RxTime = hModbusGetSystemClock();
   }
-
-  if(Handle->Type == hModbusSlave){
-    if(Handle->RxIndex > 0){
-      if(hModbusGetUartIdleFlag(Handle)){
-        Handle->RxIndex = 0;
-        Handle->RxDataReady = hModbusDataReady;
-        hModbusClearUartIdleFlag(Handle);
-        hModbusDisableIdleIt(Handle);
-      }
-    }
-  }
-
 }
 
 
 uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle){
   uint32_t startTime = hModbusGetSystemClock();
 
-
-  // Master
-  if(Handle->Type == hModbusMaster){
-    while(1){
-      hModbusDelay(1);  
-      if(hModbusGetSystemClock() - startTime > Handle->RxTimeout)
-        return 0;
-      
-      if(Handle->RxIndex > 0){
-        if(hModbusGetUartIdleFlag(Handle))
-          return Handle->RxIndex; 
-      }
-      else{
-        hModbusClearUartIdleFlag(Handle);
-      }
+  while(1){
+    hModbusDelay(1);  
+    if(hModbusGetSystemClock() - startTime > Handle->RxTimeout)
+      return 0;
+    
+    if(Handle->RxIndex > 0){
+      if(hModbusGetUartIdleFlag(Handle))
+        return Handle->RxIndex; 
     }
+    // else{
+    //   hModbusClearUartIdleFlag(Handle);
+    // }
   }
 
-  // // Slave
-  // if(Handle->Type == hModbusSlave){
-  //   while(1){
-  //     hModbusDelay(1);  
-  //     if(hModbusGetSystemClock() - startTime > Handle->RxTimeout){
-  //       // Handle->RxIndex = 0;
-  //       return 0;
-  //     }
-      
-  //     if(Handle->RxIndex > 0){
-  //       if(hModbusGetUartIdleFlag(Handle)){
-  //         hModbusFrameTypeDef RxFrame;
-  //         RxFrame = hModbusParseFrame(Handle);
-  //         hModbusRxFrameExecute(Handle, RxFrame);
-  //         // Handle->RxIndex = 0;
-  //         return 0;
-  //         }
-  //     }
-  //     else{
-  //       hModbusClearUartIdleFlag(Handle);
-  //     }
-  //   }
-  // }
-  // return 0;
 }  
 
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
@@ -456,26 +427,26 @@ bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
   hModbusDelay(1);
 
   for (uint16_t i = 0; i < size; i++){
-      while (!hModbusGetUartTxeFlag(Handle)){
-          hModbusDelay(1);
-          if(hModbusGetSystemClock() - startTime > Handle->TxTimeout){
-              if(Handle->CtrlOut.Port != NULL)
-                hModbusResetGpioPin(Handle->CtrlOut);
-              Handle->TxBusy = 0;
-              return false;
-          }   
-      }
-      hModbusClearUartTcFlag(Handle);
-      hModbusUsartTx8(Handle, Data[i]);
+    while (!hModbusGetUartTxeFlag(Handle)){
+      hModbusDelay(1);
+      if(hModbusGetSystemClock() - startTime > Handle->TxTimeout){
+          if(Handle->CtrlOut.Port != NULL)
+            hModbusResetGpioPin(Handle->CtrlOut);
+          Handle->TxBusy = 0;
+          return false;
+      }   
+    }
+    hModbusClearUartTcFlag(Handle);
+    hModbusUsartTx8(Handle, Data[i]);
   }
 
   while (!hModbusGetUartTcFlag(Handle)){
-      if(hModbusGetSystemClock() - startTime > Handle->TxTimeout){
-              if(Handle->CtrlOut.Port != NULL)
-                hModbusResetGpioPin(Handle->CtrlOut);
-              Handle->TxBusy = 0;
-              return false;
-          }    
+    if(hModbusGetSystemClock() - startTime > Handle->TxTimeout){
+      if(Handle->CtrlOut.Port != NULL)
+            hModbusResetGpioPin(Handle->CtrlOut);
+      Handle->TxBusy = 0;
+      return false;
+    }    
   }
 
   if(Handle->CtrlOut.Port != NULL)

@@ -136,7 +136,8 @@ void hModbusMaster1UartInit(void){
 	LL_USART_Enable(USART1);
 
 	LL_USART_EnableIT_RXNE(USART1);
-	LL_USART_EnableIT_ERROR(USART1);
+
+	// LL_USART_EnableIT_ERROR(USART1);
 
 	LL_USART_DisableIT_TXE(USART1);
 	LL_USART_DisableIT_TC(USART1);

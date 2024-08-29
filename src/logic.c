@@ -48,12 +48,7 @@ void MainLogicInit(void){
 }
 
 void MainLogicLoop(void){
-	if(hModbusSlave1Handle.RxDataReady == hModbusDataReady){
-		hModbusFrameTypeDef RxFrame;
-		RxFrame = hModbusParseFrame(&hModbusSlave1Handle);
-		hModbusRxFrameExecute(&hModbusSlave1Handle, RxFrame);
-		hModbusSlave1Handle.RxDataReady = hModbusDataNotReady;
-	}
+	hModbusSlaveLoopHandler(&hModbusSlave1Handle);
 	// uint16_t delay = 1;
 
 	// /* Input read test */
