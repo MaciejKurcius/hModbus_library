@@ -50,6 +50,25 @@ uint16_t hModbusCrc16(const uint8_t *nData, uint16_t wLength)
   return wCRCWord;
 } 
 
+void hModbusCalcCrc16Frame(hModbusFrameTypeDef* Frame){
+  Frame->Crc = 0xFFFF;
+  uint8_t Ptr;
+
+  Ptr = Frame->DeviceAddr ^ Frame->Crc;
+  Frame->Crc >>= 8;
+  Frame->Crc ^= hModbusCrc[Ptr];
+
+  Ptr = Frame->Cmd ^ Frame->Crc;
+  Frame->Crc >>= 8;
+  Frame->Crc ^= hModbusCrc[Ptr];
+
+  for(uint16_t i=0; i < Frame->DataLength; i++){
+    Ptr = Frame->Data[i] ^ Frame->Crc;
+    Frame->Crc >>= 8;
+    Frame->Crc ^= hModbusCrc[Ptr];
+  }
+}
+
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder){
   uint8_t TempData[DataLength];
   switch (BitOrder)
@@ -87,6 +106,7 @@ hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Dat
   Frame.Cmd = Cmd;
   Frame.DataLength = DataLength;
   memcpy(Frame.Data, Data, DataLength);
+  hModbusCalcCrc16Frame(&Frame);
   return Frame;
 }
 
@@ -104,149 +124,159 @@ void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame){
   TxData[0] = Frame.DeviceAddr;
   TxData[1] = Frame.Cmd;
   memcpy(&TxData[2], Frame.Data, Frame.DataLength);
-  volatile uint16_t Crc = hModbusCrc16(TxData, Frame.DataLength+2);
-  TxData[1+1+Frame.DataLength+0] = (Crc & 0x00FF);
-  TxData[1+1+Frame.DataLength+1] = (Crc & 0xFF00) >> 8;
+  TxData[1+1+Frame.DataLength+0] = (Frame.Crc & 0x00FF);
+  TxData[1+1+Frame.DataLength+1] = (Frame.Crc & 0xFF00) >> 8;
   hModbusSendRawData(Handle, TxData, HMODBUS_FRAME_LEN(Frame.DataLength));
 }
 
-hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle){
+hModbusFrameTypeDef hModbusMasterParseFrame(hModbusTypeDef* Handle){
   hModbusFrameTypeDef Frame = {0};
 
-  if(Handle->Type == hModbusMaster){
-    Frame.DeviceAddr = Handle->RxBuf[0];
-    Frame.Cmd = Handle->RxBuf[1];
+  Frame.DeviceAddr = Handle->RxBuf[0];
+  Frame.Cmd = Handle->RxBuf[1];
 
-    switch(Frame.Cmd){
-      case hModbusCmd_ReadCoilStatus:
-        Frame.DataLength = Handle->RxBuf[2];
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_ReadDiscreteInputs:
-        Frame.DataLength = Handle->RxBuf[2];
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_ReadHoldingRegisters:
-        Frame.DataLength = Handle->RxBuf[2];
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_ReadInputRegisters:
-        Frame.DataLength = Handle->RxBuf[2];
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteSingleCoil:
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteSingleRegister:
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteMultipleCoils:
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteMultipleRegisters:
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-    default:
-      memset(&Frame, 0, sizeof(hModbusFrameTypeDef));
+  switch(Frame.Cmd){
+    case hModbusCmd_ReadCoilStatus:
+      Frame.DataLength = Handle->RxBuf[2];
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
       break;
-    }
+    case hModbusCmd_ReadDiscreteInputs:
+      Frame.DataLength = Handle->RxBuf[2];
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_ReadHoldingRegisters:
+      Frame.DataLength = Handle->RxBuf[2];
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_ReadInputRegisters:
+      Frame.DataLength = Handle->RxBuf[2];
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteSingleCoil:
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteSingleRegister:
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteMultipleCoils:
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteMultipleRegisters:
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+  default:
+    memset(&Frame, 0, sizeof(hModbusFrameTypeDef));
+    break;
   }
 
-  if(Handle->Type == hModbusSlave){
-    Frame.DeviceAddr = Handle->RxBuf[0];
+  return Frame;
+}
 
+hModbusFrameTypeDef hModbusSlaveParseFrame(hModbusTypeDef* Handle){
+  hModbusFrameTypeDef Frame = {0};
+  uint16_t RxCrc16 = 0;
+
+  Frame.DeviceAddr = Handle->RxBuf[0];
+
+  #ifndef HMODBUS_SLAVE_CHECK_RAW_ADDR
     if(Frame.DeviceAddr != Handle->SelfAddr)
       return Frame;
-    
-    Frame.Cmd = Handle->RxBuf[1];
+  #endif
 
-    switch(Frame.Cmd){
-      case hModbusCmd_ReadCoilStatus: // ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_ReadDiscreteInputs: // ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_ReadHoldingRegisters: //ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc += (Handle->RxBuf[1+1+Frame.DataLength+1] & 0x00FF) << 8;
-        break;
-      case hModbusCmd_ReadInputRegisters: //ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteSingleCoil: //ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteSingleRegister: //ok
-        Frame.DataLength = 4;
-        memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteMultipleCoils:
-        Frame.DataLength = 4 + Handle->RxBuf[6];
-        memcpy(Frame.Data, &Handle->RxBuf[2], 4);
-        memcpy(&Frame.Data[4], &Handle->RxBuf[7], Frame.DataLength - 4);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-      case hModbusCmd_WriteMultipleRegisters:
-        Frame.DataLength = 4 + Handle->RxBuf[6];
-        memcpy(Frame.Data, &Handle->RxBuf[2], 4);
-        memcpy(&Frame.Data[4], &Handle->RxBuf[7], Frame.DataLength - 4);
-        hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
-        Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
-        break;
-    default:
-      memset(&Frame, 0, sizeof(hModbusFrameTypeDef));
+  Frame.Cmd = Handle->RxBuf[1];
+
+  switch(Frame.Cmd){
+    case hModbusCmd_ReadCoilStatus: 
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
       break;
-    }
+    case hModbusCmd_ReadDiscreteInputs: 
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+
+    case hModbusCmd_ReadHoldingRegisters: // working correctly
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      RxCrc16 = hModbusU8ToU16(&Handle->RxBuf[2+Frame.DataLength+0], hModbus16BitOrder_BA);
+      break;
+
+    case hModbusCmd_ReadInputRegisters: 
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[3], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteSingleCoil: 
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteSingleRegister: 
+      Frame.DataLength = 4;
+      memcpy(Frame.Data, &Handle->RxBuf[2], Frame.DataLength);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteMultipleCoils:
+      Frame.DataLength = 4 + Handle->RxBuf[6];
+      memcpy(Frame.Data, &Handle->RxBuf[2], 4);
+      memcpy(&Frame.Data[4], &Handle->RxBuf[7], Frame.DataLength - 4);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+    case hModbusCmd_WriteMultipleRegisters:
+      Frame.DataLength = 4 + Handle->RxBuf[6];
+      memcpy(Frame.Data, &Handle->RxBuf[2], 4);
+      memcpy(&Frame.Data[4], &Handle->RxBuf[7], Frame.DataLength - 4);
+      hModbusSwapU16DataByteArray(Frame.Data, Frame.DataLength, hModbus16BitOrder_BA);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+0] & 0x00FF);
+      Frame.Crc = (Handle->RxBuf[1+1+Frame.DataLength+1] & 0xFF00) >> 8;
+      break;
+  default:
+    memset(&Frame, 0, sizeof(hModbusFrameTypeDef));
+    break;
   }
+
+  hModbusCalcCrc16Frame(&Frame); // Function calculation CRC16 from received data
+  if(Frame.Crc != RxCrc16)  // If calculate CRC16 from received data and Rx CRC 16 value is different - error
+    Frame.Cmd = 0;
+
   return Frame;
 }
 
@@ -268,7 +298,7 @@ bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFram
     return false;
 }
 
-bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
+bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   if(RxFrame.Cmd == 0 || Handle->Type == hModbusMaster) 
     return false;
   
@@ -372,8 +402,8 @@ void hModbusSlaveLoopHandler(hModbusTypeDef* Handle){
   if(Handle->RxBusy == 1){
     if(hModbusReveiceRawData(Handle) != 0){
       hModbusFrameTypeDef RxFrame;
-      RxFrame = hModbusParseFrame(Handle);
-      hModbusRxFrameExecute(Handle, RxFrame);
+      RxFrame = hModbusSlaveParseFrame(Handle);
+      hModbusRxFrameHandler(Handle, RxFrame);
     }
     Handle->RxBusy = 0;
     Handle->RxIndex = 0;
@@ -408,18 +438,16 @@ uint16_t hModbusReveiceRawData(hModbusTypeDef* Handle){
       return 0;
     
     if(Handle->RxIndex > 0){
-      if(HMODBUS_SLAVE_CHECK_RAW_ADDR){
-        if(Handle->RxBuf[0] != Handle->SelfAddr && Handle->Type == hModbusSlave)
-          return 0;
-      }
+
+      #ifdef HMODBUS_SLAVE_CHECK_RAW_ADDR
+      if(Handle->RxBuf[0] != Handle->SelfAddr && Handle->Type == hModbusSlave)
+        return 0;
+      #endif
+
       if(hModbusGetUartIdleFlag(Handle))
         return Handle->RxIndex; 
     }
-    // else{
-    //   hModbusClearUartIdleFlag(Handle);
-    // }
   }
-
 }  
 
 bool hModbusSendRawData(hModbusTypeDef* Handle, uint8_t *Data, uint16_t size){
@@ -520,7 +548,7 @@ bool hModbusReadCoils(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Sta
   // Receive and parse RX frame
   if(hModbusReveiceRawData(Handle) == 0) // check if Rx data length is empty
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   // Check RX data
   if(hModbusCheckRxFrame(RxFrame, TxFrame)){
@@ -546,7 +574,7 @@ bool hModbusReadDiscreteInputs(hModbusTypeDef* Handle, uint8_t SlaveAddress, uin
 
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
   
   if(hModbusCheckRxFrame(RxFrame, TxFrame)){
     if(Data != NULL){
@@ -574,7 +602,7 @@ bool hModbusReadInputRegisters8i(hModbusTypeDef* Handle, uint8_t SlaveAddress, u
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
 
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   if(hModbusCheckRxFrame(RxFrame, TxFrame)){
     if(Data != NULL){
@@ -690,7 +718,7 @@ bool hModbusReadHoldingRegisters8i(hModbusTypeDef* Handle, uint8_t SlaveAddress,
 
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   if(hModbusCheckRxFrame(RxFrame, TxFrame)){
     if(Data != NULL){
@@ -806,7 +834,7 @@ bool hModbusWriteCoil(hModbusTypeDef* Handle, uint8_t SlaveAddress, uint16_t Num
 
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   if(hModbusCompareFrame(RxFrame, TxFrame))
     return true;
@@ -823,7 +851,7 @@ bool hModbusWriteHoldingRegister16i(hModbusTypeDef* Handle, uint8_t SlaveAddress
 
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   if(hModbusCompareFrame(RxFrame, TxFrame))
     return true;
@@ -852,7 +880,7 @@ bool hModbusWriteHoldingRegisters16i(hModbusTypeDef* Handle, uint8_t SlaveAddres
 
   if(hModbusReveiceRawData(Handle) == 0)
     return false;
-  hModbusFrameTypeDef RxFrame = hModbusParseFrame(Handle);
+  hModbusFrameTypeDef RxFrame = hModbusMasterParseFrame(Handle);
 
   if(hModbusCheckRxFrame(RxFrame, TxFrame) && Data != NULL){
     if(memcmp(RxFrame.Data, TxFrame.Data, 4) == 0)

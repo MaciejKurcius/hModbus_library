@@ -97,7 +97,9 @@ extern void hModbusUsartInit(hModbusTypeDef* Handle);
 extern uint32_t hModbusGetUartRxneFlag(hModbusTypeDef* Handle);
 extern void hModbusEnableRxneIt(hModbusTypeDef* Handle);
 
-
+// CRC16
+uint16_t hModbusCrc16(const uint8_t *nData, uint16_t wLength);
+void hModbusCalcCrc16Frame(hModbusFrameTypeDef* Frame);
 // Auxliary functions
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
 uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder);
@@ -105,10 +107,11 @@ uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder);
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
 hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
 void hModbusSendFrame(hModbusTypeDef* Handle, hModbusFrameTypeDef Frame);
-hModbusFrameTypeDef hModbusParseFrame(hModbusTypeDef* Handle);
+hModbusFrameTypeDef hModbusMasterParseFrame(hModbusTypeDef* Handle);
+hModbusFrameTypeDef hModbusSlaveParseFrame(hModbusTypeDef* Handle);
 bool hModbusCheckRxFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
 bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFrame);
-bool hModbusRxFrameExecute(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame);
+bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame);
 void hModbusSlaveLoopHandler(hModbusTypeDef* Handle);
 // Callbacks
 void hModbusRxCallback(hModbusTypeDef* Handle);
