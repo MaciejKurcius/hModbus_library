@@ -97,6 +97,32 @@ uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder){
   return RetData;
 }
 
+void hModbusShiftBitsInU8Array(uint8_t* Array, uint16_t ArrayLength, uint8_t BitsToShift){
+  if(ArrayLength == 0 || BitsToShift == 0)
+    return;
+
+  uint8_t ByteX0, ByteX1, Byte0 = Array[0];
+  for(uint16_t i=0; i<ArrayLength; i++){
+    ByteX0 = Array[i];
+    ByteX1 = Array[i+1];
+    if(i == ArrayLength-1)  ByteX1 = Byte0;
+    Array[i] = (ByteX0 << BitsToShift) | ((HMODBUS_BIT_MASK_AT_POS(BitsToShift, (8-BitsToShift) ) & ByteX1) >> (8-BitsToShift));
+  }
+}
+
+// void hModbusShiftBitsInU8Array(uint8_t* Array, uint16_t ArrayLength, uint8_t BitsToShift){
+//   if(ArrayLength == 0 || BitsToShift == 0)
+//     return;
+
+//   uint8_t ByteX0, ByteX1, Byte0 = Array[0];
+//   for(uint16_t i=0; i<ArrayLength; i++){
+//     ByteX0 = Array[i];
+//     ByteX1 = Array[i+1];
+//     if(i == ArrayLength-1)  ByteX1 = Byte0;
+//     Array[i] = (ByteX0 >> BitsToShift) | ((HMODBUS_BIT_MASK_AT_POS(BitsToShift, (BitsToShift) ) & ByteX1) << (BitsToShift));
+//   }
+// }
+
 
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength){
   hModbusFrameTypeDef Frame = {0};
@@ -293,20 +319,35 @@ bool hModbusCompareFrame(hModbusFrameTypeDef RxFrame, hModbusFrameTypeDef TxFram
 bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   if(RxFrame.Cmd == 0 || Handle->Type == hModbusMaster) 
     return false;
-  
+
   // check CRC value of RX frame
 
   hModbusFrameTypeDef TxFrame = {0};
 
-  if(RxFrame.Cmd == hModbusCmd_ReadCoilStatus){
-    uint16_t TxRegLength = hModbusU8ToU16(&RxFrame.Data[5], hModbus16BitOrder_AB);
-    uint16_t TxRegStart = hModbusU8ToU16(&RxFrame.Data[3], hModbus16BitOrder_AB);
-    uint8_t TxData[TxRegLength+1];
-    if(TxRegLength > HMODBUS_SLAVE_COIL_REG_SIZE)  
+  if(RxFrame.Cmd == hModbusCmd_ReadCoilStatus){ // working ok
+    
+    uint16_t FirstCoilAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
+    uint16_t CoilsToRead = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB);
+
+    uint8_t BytesToCopy = CoilsToRead / 8;
+    if((CoilsToRead % 8) != 0)  
+      BytesToCopy++;
+
+    if(((FirstCoilAddr / 8)+ BytesToCopy)  > HMODBUS_SLAVE_COIL_REG_SIZE)  // first byte + bytes to copy
       return false;
-    TxData[0] = TxRegLength;
-    memcpy(&TxData[1], &Handle->Data->CoilsReg[TxRegStart], TxRegLength);
-    TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxRegLength+1);
+
+    uint8_t TxData[BytesToCopy+1]; // NumberOfBytes + BytesToCopy
+    TxData[0] = BytesToCopy;
+
+    memcpy(&TxData[1], &Handle->Data->CoilsReg[FirstCoilAddr / 8], BytesToCopy);
+    hModbusShiftBitsInU8Array(&TxData[1], BytesToCopy, FirstCoilAddr % 8); 
+
+    // set last x bits to 0
+    uint8_t BitMask = HMODBUS_BIT_MASK(FirstCoilAddr % 8);
+    BitMask = ~BitMask; // inverse mask
+    TxData[BytesToCopy] = TxData[BytesToCopy] & BitMask;
+
+    TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, BytesToCopy+1);
   }
 
   else if(RxFrame.Cmd == hModbusCmd_ReadDiscreteInputs){

@@ -5,7 +5,10 @@
 #include <stdbool.h>
 #include  <string.h>
 
-#define HMODBUS_FRAME_LEN(arg) (1+1+(arg)+2)
+#define HMODBUS_FRAME_LEN(arg)  (1+1+(arg)+2)
+#define HMODBUS_BIT_MASK(arg)   ((1U << arg) - 1)
+#define HMODBUS_BIT_MASK_AT_POS(arg1, arg2)   (((1U << arg1) - 1) << arg2)
+
 
 typedef enum
 {
@@ -17,7 +20,6 @@ typedef enum
   hModbusCmd_WriteSingleRegister = 6,
   hModbusCmd_WriteMultipleCoils = 15,
   hModbusCmd_WriteMultipleRegisters = 16
-  
 }hModubsCmdTypeDef;
 
 typedef enum{
@@ -103,6 +105,7 @@ void hModbusCalcCrc16Frame(hModbusFrameTypeDef* Frame);
 // Auxliary functions
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
 uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder);
+void hModbusShiftBitsInU8Array(uint8_t* Array, uint16_t ArrayLength, uint8_t BitsToShift);
 // Frames handling
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
 hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
