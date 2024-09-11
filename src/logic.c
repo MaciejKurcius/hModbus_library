@@ -45,7 +45,8 @@ void MainLogicInit(void){
 	// hModbusInit(&hModbusMaster1Handle, USART1, hModbusMaster);
 	hModbusInit(&hModbusSlave1Handle, USART1, hModbusSlave, 1);
 	hModbusInitSlaveData(&hModbusSlave1Handle, &Slave1Data);
-	Slave1Data.HoldingReg[9] = 2137;
+
+	//coils reg
 	Slave1Data.CoilsReg[0] = 0b11110000; 
 	Slave1Data.CoilsReg[1] = 0b11110000; 
 	Slave1Data.CoilsReg[2] = 0b11110000; 
@@ -54,6 +55,36 @@ void MainLogicInit(void){
 	Slave1Data.CoilsReg[5] = 0b11110000;
 	Slave1Data.CoilsReg[6] = 0b11110000; 
 	Slave1Data.CoilsReg[7] = 0b11110000;
+
+	//digital input reg
+	Slave1Data.DigitalInputsReg[0] = 0b10110100; 
+	Slave1Data.DigitalInputsReg[1] = 0b10110100; 
+	Slave1Data.DigitalInputsReg[2] = 0b10110100; 
+	Slave1Data.DigitalInputsReg[3] = 0b10110100;
+	Slave1Data.DigitalInputsReg[4] = 0b10110100;
+	Slave1Data.DigitalInputsReg[5] = 0b10110100;
+	Slave1Data.DigitalInputsReg[6] = 0b10110100; 
+	Slave1Data.DigitalInputsReg[7] = 0b10110100;
+
+	//holding reg
+	Slave1Data.HoldingReg[0] = 0; 
+	Slave1Data.HoldingReg[1] = 1; 
+	Slave1Data.HoldingReg[2] = 21; 
+	Slave1Data.HoldingReg[3] = 37;
+	Slave1Data.HoldingReg[4] = 2137;
+	Slave1Data.HoldingReg[5] = 7;
+	Slave1Data.HoldingReg[6] = 77; 
+	Slave1Data.HoldingReg[7] = 957;
+
+	//Input reg
+	Slave1Data.InputsReg[0] = 0; 
+	Slave1Data.InputsReg[1] = 1; 
+	Slave1Data.InputsReg[2] = 21; 
+	Slave1Data.InputsReg[3] = 37;
+	Slave1Data.InputsReg[4] = 2137;
+	Slave1Data.InputsReg[5] = 7;
+	Slave1Data.InputsReg[6] = 77; 
+	Slave1Data.InputsReg[7] = 957;
 }
 
 void MainLogicLoop(void){
