@@ -47,14 +47,14 @@ void MainLogicInit(void){
 	hModbusInitSlaveData(&hModbusSlave1Handle, &Slave1Data);
 
 	//coils reg
-	Slave1Data.CoilsReg[0] = 0b11110000; 
-	Slave1Data.CoilsReg[1] = 0b11110000; 
-	Slave1Data.CoilsReg[2] = 0b11110000; 
-	Slave1Data.CoilsReg[3] = 0b11110000;
-	Slave1Data.CoilsReg[4] = 0b11110000;
-	Slave1Data.CoilsReg[5] = 0b11110000;
-	Slave1Data.CoilsReg[6] = 0b11110000; 
-	Slave1Data.CoilsReg[7] = 0b11110000;
+	Slave1Data.CoilsReg[0] = 0b11110000; // 7 - 0		0xF0	240
+	Slave1Data.CoilsReg[1] = 0b11110000; // 15 - 8		0xF0	240
+	Slave1Data.CoilsReg[2] = 0b01101111; // 23 - 16		0x68	104		->	0xCD	205
+	Slave1Data.CoilsReg[3] = 0b01011110; // 31 - 24		0x5E	94		->	0x6B	107
+	Slave1Data.CoilsReg[4] = 0b10010011; // 39 - 32		0x93	147		->	0xB2	178
+	Slave1Data.CoilsReg[5] = 0b01110101; // 47 - 40		0x75	117		->	0x0E	14
+	Slave1Data.CoilsReg[6] = 0b11011000; // 55 - 48		0xD8	216		->	0x1B	27
+	Slave1Data.CoilsReg[7] = 0b00001111; // 56 - 63		0xF0	240
 
 	//digital input reg
 	Slave1Data.DigitalInputsReg[0] = 0b10110100; 

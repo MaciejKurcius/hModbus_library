@@ -105,7 +105,8 @@ void hModbusCalcCrc16Frame(hModbusFrameTypeDef* Frame);
 // Auxliary functions
 void hModbusSwapU16DataByteArray(uint8_t* Data, uint8_t DataLength, hModbus16BitOrderTypeDef BitOrder);
 uint16_t hModbusU8ToU16(uint8_t* Data, hModbus16BitOrderTypeDef BitOrder);
-void hModbusShiftBitsInU8Array(uint8_t* Array, uint16_t ArrayLength, uint8_t BitsToShift);
+// void hModbusCopyDataBuffer(uint8_t* DataBuff, uint16_t DataLength, uint8_t BitsOffset);
+void hModbusCopyDataBuffer(uint8_t* TxDataBuff, uint8_t* HandleDataBuff, uint16_t DataLength, uint8_t BitsOffset);
 // Frames handling
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength);
 hModbusFrameTypeDef hModbusComposeFrame16(uint8_t Addr, uint8_t Cmd, uint16_t* Data, uint8_t DataLength);
