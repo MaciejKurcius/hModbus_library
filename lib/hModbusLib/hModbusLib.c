@@ -419,11 +419,9 @@ bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
       return false;
     
     if(RxFrame.Data[2] == 0xFF)
-      Handle->Data->CoilsReg[CoilDatBufIndex] |= 0x01 << CoilDatBitIndex; // set coil to 1
-      // hModbusSetNthBitDataBuff(Handle->Data->CoilsReg, CoilDatBufIndex, CoilDatBitIndex, 1U);
+      hModbusSetNthBitDataBuff(Handle->Data->CoilsReg, CoilDatBufIndex, CoilDatBitIndex, 1U);
     if(RxFrame.Data[2] == 0x00)
-      Handle->Data->CoilsReg[CoilDatBufIndex] &= ~(0x01 << CoilDatBitIndex); // set coil to 0
-      // hModbusSetNthBitDataBuff(Handle->Data->CoilsReg, CoilDatBufIndex, CoilDatBitIndex, 0U);
+      hModbusSetNthBitDataBuff(Handle->Data->CoilsReg, CoilDatBufIndex, CoilDatBitIndex, 0U);
     TxFrame = RxFrame;
   }
 
