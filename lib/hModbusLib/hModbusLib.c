@@ -121,54 +121,14 @@ void hModbusSetBoolValInDataBuff(uint8_t* RxDataBuff, uint8_t* DataBuff, uint16_
 
 void hModbusGetBoolValInDataBuff(uint8_t* TxDataBuff, uint8_t* DataBuff, uint16_t StartBitAddr, uint8_t BitsToRead){
   uint16_t BitsOffset = StartBitAddr % 8;
+  uint16_t ByteOffset = StartBitAddr / 8;
   for(uint16_t i = 0; i < BitsToRead; i++){
     uint16_t BitIndex = (i + BitsOffset) % 8;
     uint16_t ByteIndex = (i + BitsOffset) / 8;
-    uint8_t BitValue = hModbusGetNthBitDataBuff(DataBuff, ByteIndex, BitIndex);
+    uint8_t BitValue = hModbusGetNthBitDataBuff(DataBuff, ByteOffset + ByteIndex, BitIndex);
     hModbusSetNthBitDataBuff(TxDataBuff, i / 8, i % 8, BitValue);
   }
 }
-
-// void hModbusCopyDataBuffer(uint8_t* OutputTadaBuff, uint8_t* InputDataBuff, uint16_t BytesToCopy, uint8_t BitsOffset){
-//   if(BytesToCopy == 0 || BitsOffset == 0)
-//     return;
-//   uint8_t ByteX0, ByteX1;
-//   for(uint16_t i=0; i<BytesToCopy; i++){
-//     ByteX0 = InputDataBuff[i];
-//     ByteX1 = InputDataBuff[i+1];
-//     // if(i == BytesToCopy-1)  ByteX1 = 0x00;
-
-//     OutputTadaBuff[i] = (ByteX0 >> BitsOffset) | ((ByteX1 & HMODBUS_BIT_MASK(BitsOffset)) << (8 - BitsOffset)); 
-//   }
-// }
-
-
-// void hModbusCopyU8DataBuffer(uint8_t* OutputDataBuff, uint8_t* InputDataBuff, uint16_t BitsToCopy, uint8_t BitsOffset){
-
-//   uint8_t BytesToCopy = BitsToCopy / 8;
-//   if(BitsToCopy % 8 != 0)
-//     BytesToCopy++;
-
-//   // volatile uint8_t Temp1 = HMODBUS_BIT_MASK_AT_POS(BitsOffset, (BitsOffset + (BitsToCopy % 8)));
-//   InputDataBuff[BytesToCopy - 1] |= HMODBUS_BIT_MASK_AT_POS((8 - (BitsToCopy % 8)), (BitsToCopy % 8));
-
-//   if(BytesToCopy == 0 || BitsOffset == 0)
-//     return;
-//   uint8_t ByteX0, ByteX1;
-//   for(uint16_t i=0; i<BytesToCopy; i++){
-//     ByteX0 = InputDataBuff[i-1];
-//     ByteX1 = InputDataBuff[i];
-//     if(i == 0)  ByteX0 = 0xFF;
-
-//     volatile uint8_t Temp1 = (ByteX1 << BitsOffset);
-//     volatile uint8_t Temp2 = (ByteX1 << BitsOffset) | (HMODBUS_BIT_MASK(BitsOffset) & (ByteX0 >> (8 - BitsOffset)));
-
-//     // OutputDataBuff[i] = (ByteX1 << BitsOffset) | (HMODBUS_BIT_MASK(BitsOffset) & (ByteX0 >> (8 - BitsOffset)));
-
-//     OutputDataBuff[i] &= (ByteX1 << BitsOffset) | (HMODBUS_BIT_MASK(BitsOffset) & (ByteX0 >> (8 - BitsOffset)));
-
-//   }
-// }
 
 hModbusFrameTypeDef hModbusComposeFrame8(uint8_t Addr, uint8_t Cmd, uint8_t* Data, uint8_t DataLength){
   hModbusFrameTypeDef Frame = {0};
@@ -371,55 +331,59 @@ bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
   hModbusFrameTypeDef TxFrame = {0};
 
   if(RxFrame.Cmd == hModbusCmd_ReadCoilStatus){ // working ok
-    
-    uint16_t FirstCoilAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
     uint16_t CoilsToRead = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB);
 
     if(CoilsToRead == 0)
       return false;
 
-    uint8_t BytesToCopy = CoilsToRead / 8;
+    uint16_t FirstCoilAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
+
+    uint16_t BytesToRead = CoilsToRead / 8;
     if(FirstCoilAddr % 8 != 0)  
-      BytesToCopy++;
+      BytesToRead++;
 
-    if((FirstCoilAddr / 8 + BytesToCopy)  > HMODBUS_SLAVE_COIL_REG_SIZE)  // first byte + bytes to copy
+    if((FirstCoilAddr / 8 + BytesToRead)  > HMODBUS_SLAVE_COIL_REG_SIZE)  // first byte + bytes to read
       return false;
-
+    
     uint16_t TxCoilsBytesQty = CoilsToRead / 8;
     if(CoilsToRead % 8 != 0)
       TxCoilsBytesQty++;
 
-    uint8_t TxData[1 + TxCoilsBytesQty]; // NumberOfBytes + TxCoilsBytes
+    uint8_t TxData[1 + TxCoilsBytesQty];// NumberOfBytes + TxCoilsBytes
+    memset(TxData, 0U, TxCoilsBytesQty + 1);
     TxData[0] = TxCoilsBytesQty;
-    
-    // hModbusCopyDataBuffer(&TxData[1], &Handle->Data->CoilsReg[FirstCoilAddr / 8], BytesToCopy, FirstCoilAddr % 8); 
-    // wyzerować nadmierne bity w ostatnim bajcie
+
+    hModbusGetBoolValInDataBuff(&TxData[1], Handle->Data->CoilsReg, FirstCoilAddr, CoilsToRead);
+
     TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxData[0]+1);
   }
 
+
   else if(RxFrame.Cmd == hModbusCmd_ReadDiscreteInputs){ // working ok
-    uint16_t FirstInputAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
     uint16_t InputsToRead = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB);
-  
+
     if(InputsToRead == 0)
       return false;
 
-    uint8_t BytesToCopy = InputsToRead / 8;
-    if(FirstInputAddr % 8 != 0)  
-      BytesToCopy++;
+    uint16_t FirtsInputAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
 
-    if((FirstInputAddr / 8 + BytesToCopy)  > HMODBUS_SLAVE_COIL_REG_SIZE)  // first byte + bytes to copy
+    uint16_t BytesToRead = InputsToRead / 8;
+    if(FirtsInputAddr % 8 != 0)  
+      BytesToRead++;
+
+    if((FirtsInputAddr / 8 + BytesToRead)  > HMODBUS_SLAVE_DIGITAL_INPUTS_REG_SIZE)  // first byte + bytes to read
       return false;
-
-    uint16_t TxInputsBytesQty = InputsToRead / 8;
-    if(InputsToRead % 8 != 0)
-      TxInputsBytesQty++;
-
-    uint8_t TxData[1 + TxInputsBytesQty]; // NumberOfBytes + TxInputsBytesQty
-    TxData[0] = TxInputsBytesQty;
     
-    // hModbusCopyDataBuffer(&TxData[1], &Handle->Data->DigitalInputsReg[FirstInputAddr / 8], BytesToCopy, FirstInputAddr % 8); 
-    // wyzerować nadmierne bity w ostatnim bajcie
+    uint16_t TxCoilsBytesQty = InputsToRead / 8;
+    if(InputsToRead % 8 != 0)
+      TxCoilsBytesQty++;
+
+    uint8_t TxData[1 + TxCoilsBytesQty];// NumberOfBytes + TxCoilsBytes
+    memset(TxData, 0U, TxCoilsBytesQty + 1);
+    TxData[0] = TxCoilsBytesQty;
+
+    hModbusGetBoolValInDataBuff(&TxData[1], Handle->Data->DigitalInputsReg, FirtsInputAddr, InputsToRead);
+
     TxFrame = hModbusComposeFrame8(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, TxData[0]+1);
   }
 
@@ -488,35 +452,6 @@ bool hModbusRxFrameHandler(hModbusTypeDef* Handle, hModbusFrameTypeDef RxFrame){
     uint16_t TxData[] = {FirstCoilAddr, CoilsToWrite};
     TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
   }
-
-  // else if(RxFrame.Cmd == hModbusCmd_WriteMultipleCoils){
-  //   uint16_t CoilsToWrite = hModbusU8ToU16(&RxFrame.Data[2], hModbus16BitOrder_AB);
-
-  //   if(CoilsToWrite == 0)
-  //     return false;
-
-  //   uint16_t FirstCoilAddr = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
-
-  //   uint8_t BytesSize = RxFrame.Data[4];
-
-  //   uint16_t CoilRegIndex = FirstCoilAddr / 8;
-  //   uint8_t BitOffset = FirstCoilAddr % 8;
-
-  //   uint8_t BytesToCopy = CoilsToWrite / 8;
-  //   if(FirstCoilAddr % 8 != 0)  
-  //     BytesToCopy++;
-
-
-  //   // set last buff data unused bits to 0
-
-  //   hModbusCopyU8DataBuffer(&Handle->Data->CoilsReg[CoilRegIndex], &RxFrame.Data[5], CoilsToWrite, BitOffset);
-
-  //   if(CoilRegIndex + BytesSize > HMODBUS_SLAVE_COIL_REG_SIZE)  
-  //     return false;
-    
-  //   uint16_t TxData[] = {FirstCoilAddr, CoilsToWrite};
-  //   TxFrame = hModbusComposeFrame16(RxFrame.DeviceAddr, RxFrame.Cmd, TxData, 2);
-  // }
 
   else if(RxFrame.Cmd == hModbusCmd_WriteMultipleRegisters){ // working ok
     uint16_t HoldingRegIndex = hModbusU8ToU16(&RxFrame.Data[0], hModbus16BitOrder_AB);
